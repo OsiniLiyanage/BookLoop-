@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Primary Navigation Group (Visible when logged in) -->
+    <group android:id="@+id/side_nav_group_main" android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/home_24px"
+            android:title="@string/nav_home" />
+
+        <item
+            android:id="@+id/nav_map"
+            android:icon="@drawable/explore_nearby_24px"
+            android:title="@string/nav_map_view" />
+
+        <item
+            android:id="@+id/nav_my_library"
+            android:icon="@drawable/library_books_24px"
+            android:title="@string/nav_my_library" />
+
+
+        <item
+            android:id="@+id/nav_cart"
+            android:icon="@drawable/local_mall_24px"
+            android:title="@string/nav_cart" />
+
+        <item
+            android:id="@+id/nav_orders"
+            android:icon="@drawable/short_stay_24px"
+            android:title="@string/nav_my_orders" />
+
+        <item
+            android:id="@+id/nav_wishlist"
+            android:icon="@drawable/bookmark_heart_24px"
+            android:title="@string/nav_wishlist"
+            android:visible="false"/>
+
+
+        <item
+            android:id="@+id/nav_messages"
+            android:icon="@drawable/chat_24px"
+            android:title="@string/nav_messages" />
+
+
+        <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/account_circle_24px"
+            android:title="@string/nav_profile" />
+
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/settings_24px"
+            android:title="@string/nav_settings" />
+    </group>
+
+
+
+    <!-- Support & Info Group -->
+    <group android:id="@+id/side_nav_group_support">
+        <item
+            android:id="@+id/nav_help"
+            android:icon="@drawable/contact_support_24px"
+            android:title="@string/nav_help_support" />
+
+        <item
+            android:id="@+id/nav_about"
+            android:icon="@drawable/info_24px"
+            android:title="@string/nav_about_bookloop" />
+    </group>
+
+    <!-- Authentication Group -->
+    <group android:id="@+id/side_nav_group_auth">
+        <item
+            android:id="@+id/nav_login"
+            android:icon="@drawable/login_24px"
+            android:title="@string/nav_login" />
+
+
+        <item
+            android:id="@+id/nav_logout"
+            android:icon="@drawable/logout_24px"
+            android:title="@string/nav_logout"
+            android:visible="false"/>
+    </group>
+
+</menu>

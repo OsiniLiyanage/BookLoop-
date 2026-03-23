@@ -21,4 +21,12 @@
     <string name="nav_about_bookloop">About BookLoop</string>
     <string name="nav_login">Log In</string>
     <string name="nav_logout">Log Out</string>
+
+    <string name="nav_header_guest">Welcome, Guest!</string>
+    <string name="nav_header_email_hint">Login to access your account</string>
+    <string name="bottom_nav_home_title">Home</string>
+    <string name="bottom_nav_map_title">Map</string>
+    <string name="bottom_nav_library_title">My Library</string>
+    <string name="bottom_nav_profile_title">Profile</string>
+    <string name="search_hint">Search here</string>
 </resources>

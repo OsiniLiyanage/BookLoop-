@@ -1,30 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="200dp"
+    android:orientation="vertical"
+    android:background="@color/md_theme_primaryContainer"
+    android:padding="20dp"
+    android:gravity="bottom">
 
+    <!-- App Logo -->
     <ImageView
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_gravity="bottom"
-        android:layout_margin="20dp"
-        tools:srcCompat="@tools:sample/avatars" />
-s
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:src="@mipmap/ic_launcher"
+        android:layout_marginBottom="10dp" />
+
+    <!-- User Name -->
+    <TextView
+        android:id="@+id/nav_header_username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/nav_header_guest"
+        android:textColor="@color/md_theme_onPrimaryContainer"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- User Email -->
+    <TextView
+        android:id="@+id/nav_header_email"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/nav_header_email_hint"
+        android:textColor="@color/md_theme_primary"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <!-- Tagline -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_marginStart="125dp"
-        android:text="navoda" />
+        android:text="@string/app_tagline"
+        android:textColor="@color/md_theme_onSurfaceVariant"
+        android:textSize="10sp"
+        android:layout_marginTop="6dp"
+        android:letterSpacing="0.05" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_marginStart="125dp"
-        android:layout_marginTop="20dp"
-        android:text="osini@gmail.com" />
-
-
-</FrameLayout>
+</LinearLayout>

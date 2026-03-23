@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/home_24px"
+        android:title="@string/bottom_nav_home_title" />
+
+    <item
+        android:id="@+id/nav_map"
+        android:icon="@drawable/explore_nearby_24px"
+        android:title="@string/bottom_nav_map_title" />
+
+    <item
+        android:id="@+id/nav_my_library"
+        android:icon="@drawable/library_books_24px"
+        android:title="@string/bottom_nav_library_title" />
+
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/account_circle_24px"
+        android:title="@string/bottom_nav_profile_title" />
+
+</menu>

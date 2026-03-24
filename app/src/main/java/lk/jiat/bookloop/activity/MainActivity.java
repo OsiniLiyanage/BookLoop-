@@ -1,11 +1,14 @@
 package lk.jiat.bookloop.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -49,17 +52,25 @@ public class MainActivity extends AppCompatActivity
         bottomNavigationView = findViewById(R.id.bottom_navigation_view);
         toolbar = findViewById(R.id.toolbar);
 
+        setSupportActionBar(toolbar);
+
+        ActionBarDrawerToggle toggle =
+                new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
+        drawerLayout.addDrawerListener(toggle);
+
+        toggle.syncState();
+
         // Open drawer when menu icon is clicked
-        findViewById(R.id.toolbar).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                    drawerLayout.closeDrawer(GravityCompat.START);
-                } else {
-                    drawerLayout.openDrawer(GravityCompat.START);
-                }
-            }
-        });
+//        findViewById(R.id.toolbar).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+//                    drawerLayout.closeDrawer(GravityCompat.START);
+//                } else {
+//                    drawerLayout.openDrawer(GravityCompat.START);
+//                }
+//            }
+//        });
 
         // Handle back press — close drawer first if open
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -86,7 +97,16 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-        navigationView.setCheckedItem(-1);
+        Menu navMenu = navigationView.getMenu();
+        Menu bottomNavMenu = bottomNavigationView.getMenu();
+
+        for (int i = 0; i < navMenu.size(); i++) {
+            navMenu.getItem(i).setChecked(false);
+        }
+
+        for (int i = 0; i < bottomNavMenu.size(); i++) {
+            bottomNavMenu.getItem(i).setChecked(false);
+        }
 
         if (itemId == R.id.nav_home || itemId == R.id.bottom_nav_home) {
             loadFragment(new HomeFragment());
@@ -137,7 +157,8 @@ public class MainActivity extends AppCompatActivity
             navigationView.getMenu().findItem(R.id.nav_about).setChecked(true);
 
         } else if (itemId == R.id.nav_login) {
-            // TODO: start LoginActivity
+            Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+            startActivity(intent);
 
         } else if (itemId == R.id.nav_logout) {
             // TODO: handle logout

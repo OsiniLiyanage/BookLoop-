@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "395086011417",
+    "project_id": "bookloop-9facd",
+    "storage_bucket": "bookloop-9facd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:395086011417:android:63955ffa540952c6689e88",
+        "android_client_info": {
+          "package_name": "lk.jiat.bookloop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTVpG169eAEcqMA5DViSa1nWCzccKLY4U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

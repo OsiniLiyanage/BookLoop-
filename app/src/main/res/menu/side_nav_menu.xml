@@ -7,51 +7,67 @@
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/home_24px"
-            android:title="@string/nav_home" />
+            android:title="@string/nav_home"
+            android:checkable="true"/>/>
 
         <item
             android:id="@+id/nav_map"
             android:icon="@drawable/explore_nearby_24px"
-            android:title="@string/nav_map_view" />
+            android:title="@string/nav_map_view"
+            android:visible="true"
+            android:checkable="true"/>
 
         <item
             android:id="@+id/nav_my_library"
             android:icon="@drawable/library_books_24px"
-            android:title="@string/nav_my_library" />
+            android:title="@string/nav_my_library"
+            android:visible="true"
+            android:checkable="true"/>/>
 
 
         <item
             android:id="@+id/nav_cart"
             android:icon="@drawable/local_mall_24px"
-            android:title="@string/nav_cart" />
+            android:title="@string/nav_cart"
+            android:visible="true"
+            android:checkable="true"/>/>
 
         <item
             android:id="@+id/nav_orders"
             android:icon="@drawable/short_stay_24px"
-            android:title="@string/nav_my_orders" />
+            android:title="@string/nav_my_orders"
+            android:visible="true"
+            android:checkable="true"/>/>
 
         <item
             android:id="@+id/nav_wishlist"
             android:icon="@drawable/bookmark_heart_24px"
             android:title="@string/nav_wishlist"
-            android:visible="false"/>
+            android:visible="true"
+            android:checkable="true"/>
 
 
         <item
             android:id="@+id/nav_messages"
             android:icon="@drawable/chat_24px"
-            android:title="@string/nav_messages" />
+            android:title="@string/nav_messages"
+            android:visible="false"
+            android:checkable="true"/>/>
 
 
         <item
             android:id="@+id/nav_profile"
             android:icon="@drawable/account_circle_24px"
-            android:title="@string/nav_profile" />
+            android:title="@string/nav_profile"
+            android:visible="true"
+            android:checkable="true"/>/>
 
         <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/settings_24px"
-            android:title="@string/nav_settings" />
+            android:title="@string/nav_settings"
+            android:visible="false"
+            android:checkable="true"/>/>
     </group>
 
 
@@ -61,12 +77,16 @@
         <item
             android:id="@+id/nav_help"
             android:icon="@drawable/contact_support_24px"
-            android:title="@string/nav_help_support" />
+            android:title="@string/nav_help_support"
+            android:visible="true"
+            android:checkable="true"/>
 
         <item
             android:id="@+id/nav_about"
             android:icon="@drawable/info_24px"
-            android:title="@string/nav_about_bookloop" />
+            android:title="@string/nav_about_bookloop"
+            android:visible="true"
+            android:checkable="true"/>
     </group>
 
     <!-- Authentication Group -->

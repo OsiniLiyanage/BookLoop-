@@ -2,6 +2,7 @@ package lk.jiat.bookloop.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,11 +17,17 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import lk.jiat.bookloop.R;
+import lk.jiat.bookloop.databinding.ActivityMainBinding;
+import lk.jiat.bookloop.databinding.SideNavHeaderBinding;
 import lk.jiat.bookloop.fragment.AboutFragment;
 import lk.jiat.bookloop.fragment.CartFragment;
 import lk.jiat.bookloop.fragment.HelpFragment;
@@ -32,25 +39,36 @@ import lk.jiat.bookloop.fragment.OrdersFragment;
 import lk.jiat.bookloop.fragment.ProfileFragment;
 import lk.jiat.bookloop.fragment.SettingsFragment;
 import lk.jiat.bookloop.fragment.WishlistFragment;
+import lk.jiat.bookloop.model.User;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         BottomNavigationView.OnItemSelectedListener {
-
+    private ActivityMainBinding binding;
+    private SideNavHeaderBinding sideNavHeaderBinding;
     private DrawerLayout drawerLayout;
     private MaterialToolbar toolbar;
     private NavigationView navigationView;
     private BottomNavigationView bottomNavigationView;
+    private FirebaseAuth firebaseAuth;
+    private FirebaseFirestore firebaseFirestore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        drawerLayout = findViewById(R.id.drawerLayout);
-        navigationView = findViewById(R.id.side_navigation_view);
-        bottomNavigationView = findViewById(R.id.bottom_navigation_view);
-        toolbar = findViewById(R.id.toolbar);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        View headerView = binding.sideNavigationView.getHeaderView(0);
+
+        sideNavHeaderBinding = SideNavHeaderBinding.bind(headerView);
+
+
+        drawerLayout = binding.drawerLayout;
+        toolbar = binding.toolbar;
+        navigationView = binding.sideNavigationView;
+        bottomNavigationView = binding.bottomNavigationView;
 
         setSupportActionBar(toolbar);
 
@@ -60,19 +78,6 @@ public class MainActivity extends AppCompatActivity
 
         toggle.syncState();
 
-        // Open drawer when menu icon is clicked
-//        findViewById(R.id.toolbar).setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-//                    drawerLayout.closeDrawer(GravityCompat.START);
-//                } else {
-//                    drawerLayout.openDrawer(GravityCompat.START);
-//                }
-//            }
-//        });
-
-        // Handle back press — close drawer first if open
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -84,15 +89,65 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+
         navigationView.setNavigationItemSelectedListener(this);
         bottomNavigationView.setOnItemSelectedListener(this);
-        if (savedInstanceState == null){
+
+        if (savedInstanceState == null) {
             loadFragment(new HomeFragment());
             navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
         }
 
+        firebaseAuth = FirebaseAuth.getInstance();
+        firebaseFirestore = FirebaseFirestore.getInstance();
+
+        //check and load user details
+        FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+        if (currentUser != null) {
+            firebaseFirestore.collection("users").document(currentUser.getUid()).get()
+                    .addOnSuccessListener(ds -> {
+
+                        if (ds.exists()) {
+                            User user = ds.toObject(User.class);
+                            sideNavHeaderBinding.headerUserName.setText(user.getName());
+                            sideNavHeaderBinding.headerUserEmail.setText(user.getEmail());
+
+                            Glide.with(MainActivity.this)
+                                    .load(user.getProfilePicUrl())
+                                    .circleCrop()
+                                    .into(sideNavHeaderBinding.headerProfilePic);
+                        } else {
+                            Log.e("Firestore", "Document does not exist");
+                        }
+
+                    }).addOnFailureListener(e -> {
+                        Log.e("Firestore", "Error: " + e.getMessage());
+                    });
+
+
+            //Hide side nav login menu item
+            navigationView.getMenu().findItem(R.id.nav_login).setVisible(false);
+
+            //Show side nav menu items
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_orders).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_wishlist).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_cart).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_messages).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_logout).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_about).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_help).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_logout).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_library).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_map).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_category).setVisible(true);
+
+
+        }
+
     }
+
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -124,11 +179,21 @@ public class MainActivity extends AppCompatActivity
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_my_library).setChecked(true);
 
         } else if (itemId == R.id.nav_profile || itemId == R.id.bottom_nav_profile) {
+            if (firebaseAuth.getCurrentUser() == null){
+                Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+                startActivity(intent);
+                finish();
+            }
             loadFragment(new ProfileFragment());
             navigationView.getMenu().findItem(R.id.nav_profile).setChecked(true);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_profile).setChecked(true);
 
         } else if (itemId == R.id.nav_cart) {
+            if (firebaseAuth.getCurrentUser() == null){
+                Intent intent = new Intent(MainActivity.this, SignInActivity.class);
+                startActivity(intent);
+                finish();
+            }
             loadFragment(new CartFragment());
             navigationView.getMenu().findItem(R.id.nav_cart).setChecked(true);
 
@@ -156,12 +221,25 @@ public class MainActivity extends AppCompatActivity
             loadFragment(new AboutFragment());
             navigationView.getMenu().findItem(R.id.nav_about).setChecked(true);
 
+        } else if (itemId == R.id.nav_category) {
+            loadFragment(new AboutFragment());
+            navigationView.getMenu().findItem(R.id.nav_category).setChecked(true);
+
+
         } else if (itemId == R.id.nav_login) {
             Intent intent = new Intent(MainActivity.this, SignInActivity.class);
             startActivity(intent);
 
         } else if (itemId == R.id.nav_logout) {
-            // TODO: handle logout
+            firebaseAuth.signOut();
+            loadFragment(new HomeFragment());
+            navigationView.getMenu().clear();
+            navigationView.inflateMenu(R.menu.side_nav_menu);
+
+            //View headerView = navigationView.getHeaderView(0);
+
+            navigationView.removeHeaderView(sideNavHeaderBinding.getRoot());
+            navigationView.inflateHeaderView(R.layout.side_nav_header);
 
         }
 

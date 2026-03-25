@@ -21,7 +21,7 @@
     <string name="nav_about_bookloop">About BookLoop</string>
     <string name="nav_login">Log In</string>
     <string name="nav_logout">Log Out</string>
-<!--v2-->
+    <!--v2-->
     <string name="nav_header_guest">Welcome, Guest!</string>
     <string name="nav_header_email_hint">Login to access your account</string>
     <string name="bottom_nav_home_title">Home</string>
@@ -29,7 +29,7 @@
     <string name="bottom_nav_library_title">My Library</string>
     <string name="bottom_nav_profile_title">Profile</string>
     <string name="search_hint">Search here</string>
-<!--v3-->
+    <!--v3-->
     <string name="drawer_open">Open</string>
     <string name="drawer_close">Close</string>
     <!-- Sign In Screen -->
@@ -88,4 +88,6 @@
 
     <!-- Sign Up Success -->
     <string name="signup_success">Account created! Welcome to BookLoop!</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

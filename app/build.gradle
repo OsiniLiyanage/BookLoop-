@@ -5,11 +5,7 @@ plugins {
 
 android {
     namespace 'lk.jiat.bookloop'
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk 36
 
     defaultConfig {
         applicationId "lk.jiat.bookloop"
@@ -46,7 +42,10 @@ dependencies {
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
     implementation libs.glide
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
     implementation platform(libs.firebase.bom)
     implementation libs.firebase.analytics
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 }

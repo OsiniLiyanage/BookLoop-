@@ -8,7 +8,8 @@
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_above="@+id/product_details_bottom_bar">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -20,30 +21,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="300dp"/>
 
-            <com.tbuonomo.viewpagerdotsindicator.WormDotsIndicator
+            <com.tbuonomo.viewpagerdotsindicator.DotsIndicator
                 android:id="@+id/dotsIndicator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="8dp"
-                app:dotsColor="@color/md_theme_secondary"
-                app:dotsStrokeColor="@color/md_theme_primary"
-                app:dotsCornerRadius="8dp"
-                app:dotsSize="16dp"
-                app:dotsSpacing="4dp"
-                app:dotsStrokeWidth="2dp"
-                />
-
-<!--            <com.tbuonomo.viewpagerdotsindicator.DotsIndicator-->
-<!--                android:id="@+id/dotsIndicator"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="center_horizontal"-->
-<!--                android:layout_marginTop="8dp"-->
-<!--                app:dotsColor="#000000"-->
-<!--                app:selectedDotColor="@color/md_theme_primary"-->
-<!--                app:dotsSize="8dp"-->
-<!--                app:dotsSpacing="4dp"/>-->
+                app:dotsColor="#000000"
+                app:selectedDotColor="@color/md_theme_primary"
+                app:dotsSize="8dp"
+                app:dotsSpacing="4dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -69,15 +56,6 @@
                     android:rating="4.5" />
 
                 <TextView
-                    android:id="@+id/product_details_author"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="15dp"
-                    android:text="A.C Liyanage"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
                     android:id="@+id/product_details_price"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -95,6 +73,11 @@
                 android:padding="16dp">
 
                 <!-- Need to complete -->
+                <LinearLayout
+                    android:id="@+id/product_details_attribute_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"/>
 
 
                 <TextView
@@ -111,10 +94,10 @@
                     android:orientation="horizontal">
 
                     <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/product_details_btn_minus"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:text="-"
-                        android:background="@drawable/circle_shape"
                         android:textSize="16sp" />
 
                     <TextView
@@ -128,10 +111,10 @@
                         android:textSize="16sp" />
 
                     <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/product_details_btn_plus"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
                         android:text="+"
-                        android:background="@drawable/circle_shape"
                         android:textSize="16sp" />
 
                     <TextView
@@ -147,29 +130,23 @@
                         android:layout_marginStart="5dp" />
 
                 </LinearLayout>
-
-
-
-
-
             </LinearLayout>
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="600dp"
-                android:background="@color/md_theme_secondary"
-                >
 
-            </FrameLayout>
+            <include
+                android:id="@+id/product_details_top_sell_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                layout="@layout/item_section"/>
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
     <LinearLayout
+        android:id="@+id/product_details_bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-
         android:orientation="horizontal"
         android:padding="8dp">
 
@@ -192,7 +169,7 @@
             android:layout_weight="1"
             android:background="@color/md_theme_primary"
             android:foreground="?attr/selectableItemBackground"
-            android:text="Buy Now"
+            android:text="Rent Now"
             android:textColor="#FFFFFF"
             android:textStyle="bold" />
 

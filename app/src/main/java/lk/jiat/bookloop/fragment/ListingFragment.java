@@ -88,6 +88,17 @@ public class ListingFragment extends Fragment {
                         List<Product> products = ds.toObjects(Product.class);
 
                         adapter = new ListingAdapter(products, product -> {
+                            Bundle bundle = new Bundle();
+                            bundle.putString("productId",product.getProductId());
+
+                            ProductDetailsFragment productDetailsFragment = new ProductDetailsFragment();
+                            productDetailsFragment.setArguments(bundle);
+
+                            getParentFragmentManager().beginTransaction()
+                                    .replace(R.id.fragment_container, productDetailsFragment)
+                                    .addToBackStack(null)
+                                    .commit();
+
 
                         });
                         binding.recyclerViewListing.setAdapter(adapter);

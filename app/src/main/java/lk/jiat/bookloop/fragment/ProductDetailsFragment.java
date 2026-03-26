@@ -146,7 +146,7 @@ public class ProductDetailsFragment extends Fragment {
 
                 List<CartItem.Attribute> attributes = getFinalSelections();
 
-                CartItem cartItem = new CartItem(productId, rentalCopies, attributes);
+                CartItem cartItem = new CartItem(productId, rentalCopies,rentalWeeks, attributes);
 
                 String uid = firebaseAuth.getCurrentUser().getUid();
 

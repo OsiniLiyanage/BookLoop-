@@ -20,4 +20,8 @@ public class Product {
     private List<String> images;
     private int stockCount;
     private boolean status;
+
+    private String author;
+
+
 }

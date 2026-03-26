@@ -33,27 +33,47 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_listing, parent, false);
-
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Product product = products.get(position);
+
         holder.productTitle.setText(product.getTitle());
 
-        holder.productPrice.setText("LKR "+product.getPrice());
-        Glide.with(holder.itemView.getContext())
-                .load(product.getImages().get(0))
-                .centerCrop()
-                .into(holder.productImage);
+        // Author field
+        if (product.getAuthor() != null && !product.getAuthor().isEmpty()) {
+            holder.productAuthor.setText(product.getAuthor());
+        } else {
+            holder.productAuthor.setText("Unknown Author");
+        }
 
-        holder.itemView.setOnClickListener(v->{
+        // Price formatted as rental
+        holder.productPrice.setText("LKR " + (int) product.getPrice() + "/week");
 
+        // Availability badge
+        if (product.isStatus()) {
+            holder.productStatus.setText("Available");
+            holder.productStatus.setVisibility(View.VISIBLE);
+        } else {
+            holder.productStatus.setText("Unavailable");
+            holder.productStatus.setVisibility(View.VISIBLE);
+        }
+
+        // Load book cover image
+        if (product.getImages() != null && !product.getImages().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(product.getImages().get(0))
+                    .centerCrop()
+                    .placeholder(R.color.md_theme_surfaceVariant)
+                    .into(holder.productImage);
+        }
+
+        holder.itemView.setOnClickListener(v -> {
             Animation animation = AnimationUtils.loadAnimation(v.getContext(), R.anim.click_animation);
             v.startAnimation(animation);
-
-            if (listener != null){
+            if (listener != null) {
                 listener.onListingItemClick(product);
             }
         });
@@ -64,20 +84,24 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
         return products.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder{
+    public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView productImage;
         TextView productTitle;
+        TextView productAuthor;
         TextView productPrice;
+        TextView productStatus;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            productImage = itemView.findViewById(R.id.listing_item_image);
-            productTitle = itemView.findViewById(R.id.listing_item_name);
-            productPrice = itemView.findViewById(R.id.listing_item_price);
+            productImage  = itemView.findViewById(R.id.listing_item_image);
+            productTitle  = itemView.findViewById(R.id.listing_item_name);
+            productAuthor = itemView.findViewById(R.id.listing_item_author);
+            productPrice  = itemView.findViewById(R.id.listing_item_price);
+            productStatus = itemView.findViewById(R.id.listing_item_status);
         }
     }
 
-    public interface OnListingItemClickListener{
+    public interface OnListingItemClickListener {
         void onListingItemClick(Product product);
     }
 }

@@ -41,7 +41,8 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Product product = products.get(position);
         holder.productTitle.setText(product.getTitle());
-        holder.productPrice.setText(product.getPrice()+"");
+
+        holder.productPrice.setText("LKR "+product.getPrice());
         Glide.with(holder.itemView.getContext())
                 .load(product.getImages().get(0))
                 .centerCrop()

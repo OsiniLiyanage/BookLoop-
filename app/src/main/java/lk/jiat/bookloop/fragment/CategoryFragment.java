@@ -10,11 +10,14 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.List;
 
@@ -77,11 +80,10 @@ public class CategoryFragment extends Fragment {
                         //List<Category> categories = result.toObjects(Category.class);
 
                         List<Category> categories = task.getResult().toObjects(Category.class);
-                        adapter = new CategoryAdapter(categories,category -> {
+                        adapter = new CategoryAdapter(categories, category -> {
 
                             Bundle bundle = new Bundle();
-                            bundle.putString("categoryId",
-                                    category.getCategoryId());
+                            bundle.putString("categoryId", category.getCategoryId());
 
                             ListingFragment fragment = new ListingFragment();
                             fragment.setArguments(bundle);

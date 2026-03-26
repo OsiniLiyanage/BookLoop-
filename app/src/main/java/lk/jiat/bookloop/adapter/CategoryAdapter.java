@@ -3,8 +3,11 @@ package lk.jiat.bookloop.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,19 +16,14 @@ import com.bumptech.glide.Glide;
 
 import java.util.List;
 
-
 import lk.jiat.bookloop.R;
-
 import lk.jiat.bookloop.model.Category;
+import lombok.val;
 
 public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
 
     private List<Category> categories;
     private OnCategoryClickListener listener;
-
-    public interface OnCategoryClickListener {
-        void onCategoryClick(Category category);
-    }
 
     public CategoryAdapter(List<Category> categories, OnCategoryClickListener listener) {
         this.categories = categories;
@@ -34,7 +32,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public CategoryAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_category, parent, false);
 
@@ -42,15 +40,20 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull CategoryAdapter.ViewHolder holder, int position) {
         Category category = categories.get(position);
         holder.categoryName.setText(category.getName());
         Glide.with(holder.itemView.getContext())
                 .load(category.getImageUrl())
+                .centerCrop()
                 .into(holder.categoryImage);
 
-        holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
+        holder.itemView.setOnClickListener(v->{
+
+            Animation animation = AnimationUtils.loadAnimation(v.getContext(), R.anim.click_animation);
+            v.startAnimation(animation);
+
+            if (listener != null){
                 listener.onCategoryClick(category);
             }
         });
@@ -70,5 +73,9 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
             categoryImage = itemView.findViewById(R.id.category_image);
             categoryName = itemView.findViewById(R.id.category_name);
         }
+    }
+
+    public interface OnCategoryClickListener{
+        void onCategoryClick(Category category);
     }
 }

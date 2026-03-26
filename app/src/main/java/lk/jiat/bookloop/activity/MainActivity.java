@@ -30,6 +30,7 @@ import lk.jiat.bookloop.databinding.ActivityMainBinding;
 import lk.jiat.bookloop.databinding.SideNavHeaderBinding;
 import lk.jiat.bookloop.fragment.AboutFragment;
 import lk.jiat.bookloop.fragment.CartFragment;
+import lk.jiat.bookloop.fragment.CategoryFragment;
 import lk.jiat.bookloop.fragment.HelpFragment;
 import lk.jiat.bookloop.fragment.HomeFragment;
 import lk.jiat.bookloop.fragment.LibraryFragment;
@@ -222,7 +223,7 @@ public class MainActivity extends AppCompatActivity
             navigationView.getMenu().findItem(R.id.nav_about).setChecked(true);
 
         } else if (itemId == R.id.nav_category) {
-            loadFragment(new AboutFragment());
+            loadFragment(new CategoryFragment());
             navigationView.getMenu().findItem(R.id.nav_category).setChecked(true);
 
 

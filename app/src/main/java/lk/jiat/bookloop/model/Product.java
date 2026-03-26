@@ -1,5 +1,7 @@
 package lk.jiat.bookloop.model;
 
+
+
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -23,6 +25,18 @@ public class Product {
     private float rating;
 
     private String author;
+    private List<Attribute> attributes;
+
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Attribute {
+        private String name;
+        private String type;
+        private List<String> values;
+    }
 
 
 }

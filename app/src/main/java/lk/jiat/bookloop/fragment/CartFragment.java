@@ -58,8 +58,13 @@ public class CartFragment extends Fragment {
 
         // Proceed to checkout button
         binding.cartBtnProceed.setOnClickListener(v -> {
-            // TODO: implement checkout / order placement
-            Toast.makeText(getContext(), "Proceeding to checkout...", Toast.LENGTH_SHORT).show();
+
+            //Toast.makeText(getContext(), "Proceeding to checkout...", Toast.LENGTH_SHORT).show();
+            CheckoutFragment checkoutFragment = new CheckoutFragment();
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, checkoutFragment)
+                    .addToBackStack(null)
+                    .commit();
         });
     }
 

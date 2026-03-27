@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.List;
 
@@ -20,14 +21,16 @@ import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.model.Category;
 import lombok.val;
 
-public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
+public class  CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
 
     private List<Category> categories;
     private OnCategoryClickListener listener;
+    private FirebaseStorage storage;
 
     public CategoryAdapter(List<Category> categories, OnCategoryClickListener listener) {
         this.categories = categories;
         this.listener = listener;
+        storage = FirebaseStorage.getInstance();
     }
 
     @NonNull
@@ -43,10 +46,18 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     public void onBindViewHolder(@NonNull CategoryAdapter.ViewHolder holder, int position) {
         Category category = categories.get(position);
         holder.categoryName.setText(category.getName());
-        Glide.with(holder.itemView.getContext())
-                .load(category.getImageUrl())
-                .centerCrop()
-                .into(holder.categoryImage);
+        storage.getReference(category.getImageUrl())
+                .getDownloadUrl()
+                .addOnSuccessListener(uri -> {
+
+                    //Log.i("LoadImages",uri.toString());
+
+                    Glide.with(holder.itemView.getContext())
+                            .load(uri)
+                            .centerCrop()
+                            .into(holder.categoryImage);
+                });
+
 
         holder.itemView.setOnClickListener(v->{
 

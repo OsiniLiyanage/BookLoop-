@@ -1,13 +1,18 @@
 package lk.jiat.bookloop.activity;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,6 +29,10 @@ import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+
+import java.util.UUID;
 
 import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.databinding.ActivityMainBinding;
@@ -144,10 +153,51 @@ public class MainActivity extends AppCompatActivity
             navigationView.getMenu().findItem(R.id.nav_map).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_category).setVisible(true);
 
+            /// Change or Set profile image
+            sideNavHeaderBinding.headerProfilePic.setOnClickListener(v -> {
+
+                Intent intent = new Intent();
+                intent.setType("image/*");
+                intent.setAction(Intent.ACTION_GET_CONTENT);
+
+                activityResultLauncher.launch(intent);
+            });
 
         }
 
     }
+
+    ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Uri uri = result.getData().getData();
+                    Log.i("ImageURI", uri.getPath());
+
+                    Glide.with(MainActivity.this)
+                            .load(uri)
+                            .circleCrop()
+                            .into(sideNavHeaderBinding.headerProfilePic);
+
+
+                    String imageId = UUID.randomUUID().toString();
+
+                    FirebaseStorage storage = FirebaseStorage.getInstance();
+
+                    StorageReference imageReference = storage.getReference("profile_images").child(imageId);
+                    imageReference.putFile(uri)
+                            .addOnSuccessListener(taskSnapshot -> {
+
+                                firebaseFirestore.collection("users")
+                                        .document(firebaseAuth.getUid())
+                                        .update("profilePicUrl", imageId)
+                                        .addOnSuccessListener(aVoid -> {
+                                            Toast.makeText(MainActivity.this, "Profile image changed!", Toast.LENGTH_SHORT).show();
+                                        });
+                            });
+
+                }
+            }
+    );
 
 
     @Override

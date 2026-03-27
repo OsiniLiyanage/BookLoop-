@@ -1,517 +1,497 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- NEW — Complete redesign for BookLoop rental checkout (replaces generic e-commerce layout) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="8dp"
+    android:background="@color/md_theme_background"
+    android:orientation="vertical"
     tools:context=".fragment.CheckoutFragment">
 
+
+    <!-- NEW — Step indicator -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/md_theme_primaryContainer"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="① Delivery"
+            android:textColor="@color/md_theme_primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="1dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@color/md_theme_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="② Payment"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <!-- Scrollable content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/checkout_btn_proceed">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/shipping_layout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:text="Shipping Details"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:id="@+id/shipping_layout_btn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/arrow_down_24px"
-                        android:layout_alignParentEnd="true"
-                        android:rotation="180"/>
-
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:id="@+id/shipping_layout_body"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:text="Name"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_name"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="Lakshan"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Email"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_email"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="lakshan@example.com"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Contact No"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_contact"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="xxx xx xx xxx"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Address Line 1"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_address1"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="address line 1"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Address Line 2"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_address2"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="address line 2"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="City"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_city"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="city"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Post Code"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/shipping_details_postcode"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="1234"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <CheckBox
-                        android:id="@+id/shipping_details_check_billing"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:checked="true"
-                        android:text="Billing address same as shipping" />
-                </LinearLayout>
-
-
-            </com.google.android.material.card.MaterialCardView>
-
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/billing_layout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:visibility="gone">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:text="Billing Details"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:id="@+id/billing_layout_btn"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/arrow_down_24px"
-                        android:layout_alignParentEnd="true"
-                        android:rotation="180"/>
-
-                </RelativeLayout>
-
-                <LinearLayout
-                    android:id="@+id/billing_layout_body"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:text="Name"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_name"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="Lakshan"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Email"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_email"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="lakshan@example.com"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Contact No"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_contact"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="xxx xx xx xxx"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Address Line 1"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_address1"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="address line 1"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Address Line 2"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_address2"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="address line 2"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="City"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_city"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="city"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Post Code"
-                        android:textColor="@color/md_theme_primary"
-                        android:textSize="12sp" />
-
-                    <EditText
-                        android:id="@+id/billing_details_postcode"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/custom_input_search"
-                        android:hint="1234"
-                        android:inputType="text"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
-                        android:textSize="12sp" />
-
-
-                </LinearLayout>
-
-
-            </com.google.android.material.card.MaterialCardView>
-
-
+            <!-- NEW — Delivery address card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/md_theme_primaryContainer">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_centerVertical="true"
-                        android:text="Order Summary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                </RelativeLayout>
+                app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:strokeColor="@color/md_theme_outlineVariant"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
                     android:orientation="vertical"
                     android:padding="16dp">
+
+                    <!-- Section header -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/explore_nearby_24px"
+                            app:tint="@color/md_theme_primary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Delivery Address"
+                            android:textColor="@color/md_theme_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginTop="10dp"
-                        android:background="?android:attr/listDivider" />
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@color/md_theme_outlineVariant" />
+
+                    <!-- Name -->
+                    <TextView
+                        style="@style/CheckoutFieldLabel"
+                        android:text="Full Name *" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:hint="Your full name">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/checkout_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPersonName" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Phone -->
+                    <TextView
+                        style="@style/CheckoutFieldLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="Phone Number *" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:hint="0XX XXX XXXX">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/checkout_phone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Email -->
+                    <TextView
+                        style="@style/CheckoutFieldLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="Email Address *" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:hint="your@email.com">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/checkout_email"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textEmailAddress" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Address Line 1 -->
+                    <TextView
+                        style="@style/CheckoutFieldLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="Address Line 1 *" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:hint="No. 12, Example Street">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/checkout_address1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPostalAddress" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Address Line 2 -->
+                    <TextView
+                        style="@style/CheckoutFieldLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="Address Line 2" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:hint="Apartment, floor, etc. (optional)">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/checkout_address2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPostalAddress" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- City and Postcode in a row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:layout_weight="2"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/CheckoutFieldLabel"
+                                android:text="City *" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="Colombo">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/checkout_city"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textCapWords" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/CheckoutFieldLabel"
+                                android:text="Post Code" />
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:hint="10350">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/checkout_postcode"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- NEW — Rental note card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="#FFF3E0"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/md_theme_primary"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📚"
+                        android:textSize="20sp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="BookLoop will deliver your books within 1-2 working days. Please ensure your address is correct."
+                        android:textColor="@color/md_theme_onSurface"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- NEW — Order summary card (shows books with rental weeks) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:strokeColor="@color/md_theme_outlineVariant"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/short_stay_24px"
+                            app:tint="@color/md_theme_primary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Order Summary"
+                            android:textColor="@color/md_theme_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@color/md_theme_outlineVariant" />
+
+                    <!-- Books list (populated by adapter) -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/checkout_books_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@color/md_theme_outlineVariant" />
+
+                    <!-- Rental subtotal row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
                         android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Subtotal" />
+                            android:text="Rental Subtotal"
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/checkout_subtotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="LKR 2500.00"
+                            android:text="LKR 0.00"
+                            android:textColor="@color/md_theme_onSurface"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
 
+                    <!-- Delivery fee row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="8dp"
                         android:orientation="horizontal">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Total Shipping" />
+                            android:text="Delivery Fee"
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/checkout_shipping"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="LKR 500.00"
+                            android:text="LKR 100.00"
+                            android:textColor="@color/md_theme_onSurface"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
 
+                    <!-- Divider -->
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginTop="10dp"
-                        android:background="?android:attr/listDivider" />
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@color/md_theme_outlineVariant" />
 
+                    <!-- Total row (highlighted) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:orientation="horizontal">
+                        android:background="#FFF3E0"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="8dp">
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Total"
+                            android:text="Total Amount"
+                            android:textColor="@color/md_theme_primary"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/checkout_total"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="LKR 3000.00"
+                            android:text="LKR 0.00"
+                            android:textColor="@color/md_theme_primary"
+                            android:textSize="18sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
-
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Bottom spacing -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="16dp" />
 
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/checkout_btn_proceed"
+    <!-- NEW — Fixed bottom payment button -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginTop="10dp"
-        android:text="Proceed to Payment" />
-</RelativeLayout>
+        android:layout_height="wrap_content"
+        android:background="@color/md_theme_surfaceContainerLowest"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/checkout_btn_proceed"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Proceed to Payment via PayHere"
+            android:textSize="15sp"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/local_mall_24px"
+            app:iconGravity="textStart" />
+
+    </LinearLayout>
+
+</LinearLayout>

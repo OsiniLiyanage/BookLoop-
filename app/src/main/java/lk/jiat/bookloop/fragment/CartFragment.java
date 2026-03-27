@@ -28,6 +28,21 @@ import lk.jiat.bookloop.databinding.FragmentCartBinding;
 import lk.jiat.bookloop.model.CartItem;
 import lk.jiat.bookloop.model.Product;
 
+/*
+ * CartFragment.java
+ * ─────────────────
+ * Shows all items in the user's rental cart.
+ *
+ * CHANGE:
+ *   - Bottom navigation bar is NOW VISIBLE while in the cart (we removed the old
+ *     "hide bottom nav" code). Cart is a main destination (it's in the bottom nav),
+ *     so it should behave like Home/Browse — the bottom bar stays visible.
+ *   - The header still has a title and item count, but the back button is removed.
+ *     Users navigate away using the bottom nav, just like every other main screen.
+ *
+ * WHY: Having the bottom nav disappear only makes sense for sub-pages like
+ *      ProductDetails and Checkout — not for a main tab destination.
+ */
 public class CartFragment extends Fragment {
 
     private FragmentCartBinding binding;
@@ -43,23 +58,15 @@ public class CartFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Hide bottom nav — cart is a focused checkout flow
-        getActivity().findViewById(R.id.bottom_navigation_view).setVisibility(View.GONE);
-
-        // Back button — go to HomeFragment (not just popBackStack since cart may open from side nav)
-        binding.cartBtnBack.setOnClickListener(v -> {
-            getParentFragmentManager().beginTransaction()
-                    .replace(R.id.fragment_container, new HomeFragment())
-                    .commit();
-        });
+        // ── Bottom nav stays VISIBLE — cart is a top-level destination ────────
+        // We do NOT hide it here. The old code hid it, making it look broken.
+        // Bottom nav was already set visible by MainActivity when this fragment is loaded.
 
         // Load cart items from Firestore
         loadCart();
 
         // Proceed to checkout button
         binding.cartBtnProceed.setOnClickListener(v -> {
-
-            //Toast.makeText(getContext(), "Proceeding to checkout...", Toast.LENGTH_SHORT).show();
             CheckoutFragment checkoutFragment = new CheckoutFragment();
             getParentFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, checkoutFragment)
@@ -74,7 +81,6 @@ public class CartFragment extends Fragment {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         if (firebaseAuth.getCurrentUser() == null) {
-            // User not logged in — show empty state
             showEmptyState();
             return;
         }
@@ -87,11 +93,10 @@ public class CartFragment extends Fragment {
                     if (!qds.isEmpty()) {
                         cartItems = new ArrayList<>();
 
-                        // Build cart list and capture document IDs for update/delete
                         for (DocumentSnapshot ds : qds.getDocuments()) {
                             CartItem cartItem = ds.toObject(CartItem.class);
                             if (cartItem != null) {
-                                cartItem.setDocumentId(ds.getId()); // store doc ID for Firestore ops
+                                cartItem.setDocumentId(ds.getId());
                                 cartItems.add(cartItem);
                             }
                         }
@@ -111,27 +116,20 @@ public class CartFragment extends Fragment {
 
         CartAdapter adapter = new CartAdapter(cartItems);
 
-        // Update item count badge in header
         binding.cartItemCount.setText(cartItems.size() + " item" + (cartItems.size() == 1 ? "" : "s"));
 
-        // ── Listener: called when weeks OR copies change ──────────────────────
         adapter.setOnCartItemChangeListener(cartItem -> {
-            // Save updated quantity and rentalWeeks to Firestore
             Map<String, Object> updates = new HashMap<>();
             updates.put("quantity", cartItem.getQuantity());
-            updates.put("rentalWeeks", cartItem.getRentalWeeks()); // NEW — save rental weeks
+            updates.put("rentalWeeks", cartItem.getRentalWeeks());
 
             db.collection("users").document(uid)
                     .collection("cart")
                     .document(cartItem.getDocumentId())
                     .update(updates)
-                    .addOnSuccessListener(aVoid -> {
-                        // Recalculate total after any change
-                        updateTotal();
-                    });
+                    .addOnSuccessListener(aVoid -> updateTotal());
         });
 
-        // ── Listener: remove item from cart ──────────────────────────────────
         adapter.setOnRemoveListener(position -> {
             String documentId = cartItems.get(position).getDocumentId();
 
@@ -144,13 +142,11 @@ public class CartFragment extends Fragment {
                         adapter.notifyItemRemoved(position);
                         adapter.notifyItemRangeChanged(position, cartItems.size());
 
-                        // Update count badge
                         binding.cartItemCount.setText(cartItems.size() + " item" + (cartItems.size() == 1 ? "" : "s"));
 
                         updateTotal();
                         Toast.makeText(getContext(), "Book removed from cart", Toast.LENGTH_SHORT).show();
 
-                        // Show empty state if no items left
                         if (cartItems.isEmpty()) showEmptyState();
                     });
         });
@@ -159,7 +155,6 @@ public class CartFragment extends Fragment {
     }
 
     // ─── Calculate total rental cost across all cart items ───────────────────
-    // total = sum of (price × weeks × copies) for each item
     private void updateTotal() {
         if (cartItems == null || cartItems.isEmpty()) {
             binding.cartTextTotal.setText(String.format(Locale.US, "LKR %,.2f", 0.00));
@@ -168,7 +163,6 @@ public class CartFragment extends Fragment {
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Collect all product IDs to fetch prices in one query
         List<String> productIds = new ArrayList<>();
         for (CartItem item : cartItems) {
             productIds.add(item.getProductId());
@@ -178,7 +172,6 @@ public class CartFragment extends Fragment {
                 .whereIn("productId", productIds)
                 .get()
                 .addOnSuccessListener(qds -> {
-                    // Build a map of productId → product for quick lookup
                     Map<String, Product> productMap = new HashMap<>();
                     qds.getDocuments().forEach(ds -> {
                         Product product = ds.toObject(Product.class);
@@ -187,12 +180,10 @@ public class CartFragment extends Fragment {
                         }
                     });
 
-                    // Calculate grand total: price × weeks × copies for each item
                     double total = 0;
                     for (CartItem cartItem : cartItems) {
                         Product product = productMap.get(cartItem.getProductId());
                         if (product != null) {
-                            // rentalWeeks defaults to 1 if somehow 0 (old cart items before update)
                             int weeks = cartItem.getRentalWeeks() > 0 ? cartItem.getRentalWeeks() : 1;
                             total += product.getPrice() * weeks * cartItem.getQuantity();
                         }
@@ -207,18 +198,5 @@ public class CartFragment extends Fragment {
         binding.cartCartItems.setVisibility(View.GONE);
         binding.cartEmptyState.setVisibility(View.VISIBLE);
         binding.cartTextTotal.setText(String.format(Locale.US, "LKR %,.2f", 0.00));
-    }
-
-    // ─── Restore bottom nav when leaving cart ────────────────────────────────
-    @Override
-    public void onStop() {
-        super.onStop();
-        getActivity().findViewById(R.id.bottom_navigation_view).setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        getActivity().findViewById(R.id.bottom_navigation_view).setVisibility(View.GONE);
     }
 }

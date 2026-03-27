@@ -56,4 +56,16 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <!-- CheckoutFieldLabel — used for small labels above form fields in checkout.
+         WHY a separate style: Keeps all field labels consistent size/color
+         without copy-pasting the same attributes on every TextView. -->
+    <style name="CheckoutFieldLabel" parent="android:Widget.TextView">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/md_theme_onSurfaceVariant</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 </resources>

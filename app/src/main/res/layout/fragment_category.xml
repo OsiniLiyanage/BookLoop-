@@ -1,17 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<!-- NEW — Category page with header + 2-column scrollable grid -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragment.CategoryFragment">
+    android:background="@color/md_theme_background"
+    android:orientation="vertical">
 
+    <!-- NEW — Page header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Browse by Genre"
+            android:textColor="@color/md_theme_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Find the perfect book to rent"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <!-- NEW — 2-column grid (GridLayoutManager(2) set in Java) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view_categories"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"/>
-<!--        android:background="@color/md_theme_primaryContainer"/>-->
+        android:clipToPadding="false"
+        android:padding="10dp" />
 
-
-
-</FrameLayout>
+</LinearLayout>

@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cart Fragment layout — full screen, no bottom nav, scroll items, sticky summary at bottom -->
+<!--
+    fragment_cart.xml
+    Cart screen — bottom nav stays visible (cart is a main tab destination).
+    Header row only shows title + item count badge. Back button REMOVED.
+    Users navigate away using the bottom navigation bar like any other main screen.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,7 +14,7 @@
     android:orientation="vertical"
     tools:context=".fragment.CartFragment">
 
-    <!-- ── Header bar with back button and title ── -->
+    <!-- ── Header bar — title and item count only, NO back button ── -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,25 +22,15 @@
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
-
-        <!-- Back button — navigates back to Home -->
-        <ImageView
-            android:id="@+id/cart_btn_back"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/badge_available"
-            android:padding="8dp"
-            android:src="@drawable/arrow_back_24px" />
+        android:padding="16dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="My Rental Cart"
             android:textColor="@color/md_theme_onSurface"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <!-- Item count badge -->
@@ -108,7 +103,6 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Summary rows -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -134,7 +128,6 @@
 
             </LinearLayout>
 
-            <!-- Proceed button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/cart_btn_proceed"
                 android:layout_width="match_parent"

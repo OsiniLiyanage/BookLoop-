@@ -1,26 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    bottom_nav_menu.xml
+    The 5 main destinations a user needs fast access to.
+    WHY these 5:  Home (browse), Category (find by genre), Cart (items added),
+                  Orders (track rentals), Profile (account).
+    Library and Map are moved to the side drawer since they are secondary features.
+-->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Home — first tab, default screen -->
     <item
         android:id="@+id/bottom_nav_home"
         android:icon="@drawable/home_24px"
-        android:title="@string/bottom_nav_home_title" />
+        android:title="Home" />
 
+    <!-- Browse — shows all book categories -->
     <item
-        android:id="@+id/bottom_nav_map"
-        android:icon="@drawable/explore_nearby_24px"
-        android:title="@string/bottom_nav_map_title" />
+        android:id="@+id/bottom_nav_category"
+        android:icon="@drawable/tile_medium_24px"
+        android:title="Browse" />
 
+    <!-- Cart — books the user has added, leads to checkout -->
     <item
-        android:id="@+id/bottom_nav_my_library"
-        android:icon="@drawable/library_books_24px"
-        android:title="@string/bottom_nav_library_title"/>
-<!--        android:enabled="false"-->
+        android:id="@+id/bottom_nav_cart"
+        android:icon="@drawable/local_mall_24px"
+        android:title="Cart" />
 
+    <!-- Orders — rental history and active orders -->
+    <item
+        android:id="@+id/bottom_nav_orders"
+        android:icon="@drawable/receipt_24px"
+        android:title="Orders" />
 
+    <!-- Profile — account details, wishlist link, settings -->
     <item
         android:id="@+id/bottom_nav_profile"
         android:icon="@drawable/account_circle_24px"
-        android:title="@string/bottom_nav_profile_title" />
+        android:title="Profile" />
 
 </menu>

@@ -52,5 +52,7 @@ dependencies {
     implementation(libs.dotsindicator)
     implementation libs.payhere.android.sdk
     implementation libs.gson
+    implementation 'androidx.work:work-runtime:2.9.0'
+    implementation 'com.google.android.gms:play-services-maps:18.2.0'
 
 }

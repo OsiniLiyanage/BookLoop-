@@ -1,113 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    side_nav_menu.xml
+    Side drawer (hamburger menu) — contains secondary and account-level navigation.
+    Library and Messages removed because:
+      - Library is not relevant for an admin-only rental model (no user book listing)
+      - Messages replaced by phone/support call feature in ProfileFragment
+    WHY visible="false" on most items: They only appear AFTER the user logs in.
+    MainActivity.java sets them visible once Firebase Auth confirms a user is signed in.
+-->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Primary Navigation Group (Visible when logged in) -->
+    <!-- ── Main Navigation ──────────────────────────────────────────── -->
     <group android:id="@+id/side_nav_group_main" android:checkableBehavior="single">
 
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/home_24px"
-            android:title="@string/nav_home"
+            android:title="Home"
             android:checkable="true"/>
+
+        <!-- Categories — also accessible from bottom nav, but kept here for convenience -->
         <item
             android:id="@+id/nav_category"
             android:icon="@drawable/tile_medium_24px"
-            android:title="Category"
+            android:title="Browse Books"
             android:visible="false"
             android:checkable="true"/>
 
+        <!-- Map — shows BookLoop delivery coverage area -->
         <item
             android:id="@+id/nav_map"
             android:icon="@drawable/explore_nearby_24px"
-            android:title="@string/nav_map_view"
+            android:title="Map"
             android:visible="false"
             android:checkable="true"/>
 
-        <item
-            android:id="@+id/nav_my_library"
-            android:icon="@drawable/library_books_24px"
-            android:title="@string/nav_my_library"
-            android:visible="false"
-            android:checkable="true"/>
-
-
+        <!-- Cart — shortcut from side drawer -->
         <item
             android:id="@+id/nav_cart"
             android:icon="@drawable/local_mall_24px"
-            android:title="@string/nav_cart"
+            android:title="My Cart"
             android:visible="false"
             android:checkable="true"/>
 
+        <!-- Orders — shortcut from side drawer -->
         <item
             android:id="@+id/nav_orders"
-            android:icon="@drawable/short_stay_24px"
-            android:title="@string/nav_my_orders"
+            android:icon="@drawable/receipt_24px"
+            android:title="My Orders"
             android:visible="false"
             android:checkable="true"/>
 
+        <!-- Wishlist — saved books list (stored in SQLite locally) -->
         <item
             android:id="@+id/nav_wishlist"
             android:icon="@drawable/bookmark_heart_24px"
-            android:title="@string/nav_wishlist"
+            android:title="Wishlist"
             android:visible="false"
             android:checkable="true"/>
 
-
-        <item
-            android:id="@+id/nav_messages"
-            android:icon="@drawable/chat_24px"
-            android:title="@string/nav_messages"
-            android:visible="false"
-            android:checkable="true"/>
-
-
+        <!-- Profile -->
         <item
             android:id="@+id/nav_profile"
             android:icon="@drawable/account_circle_24px"
-            android:title="@string/nav_profile"
+            android:title="My Profile"
             android:visible="false"
             android:checkable="true"/>
 
+        <!-- Settings -->
         <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/settings_24px"
-            android:title="@string/nav_settings"
+            android:title="Settings"
             android:visible="true"
             android:checkable="true"/>
+
     </group>
 
-
-
-    <!-- Support & Info Group -->
+    <!-- ── Support & Info ────────────────────────────────────────────── -->
     <group android:id="@+id/side_nav_group_support">
+
         <item
             android:id="@+id/nav_help"
             android:icon="@drawable/contact_support_24px"
-            android:title="@string/nav_help_support"
+            android:title="Help &amp; Support"
             android:visible="true"
             android:checkable="true"/>
 
         <item
             android:id="@+id/nav_about"
             android:icon="@drawable/info_24px"
-            android:title="@string/nav_about_bookloop"
+            android:title="About BookLoop"
             android:visible="true"
             android:checkable="true"/>
+
     </group>
 
-    <!-- Authentication Group -->
+    <!-- ── Authentication ────────────────────────────────────────────── -->
     <group android:id="@+id/side_nav_group_auth">
+
+        <!-- Login — visible only when NOT logged in -->
         <item
             android:id="@+id/nav_login"
             android:icon="@drawable/login_24px"
-            android:title="@string/nav_login" />
+            android:title="Log In" />
 
-
+        <!-- Logout — visible only when logged in -->
         <item
             android:id="@+id/nav_logout"
             android:icon="@drawable/logout_24px"
-            android:title="@string/nav_logout"
+            android:title="Log Out"
             android:visible="false"/>
+
     </group>
 
 </menu>

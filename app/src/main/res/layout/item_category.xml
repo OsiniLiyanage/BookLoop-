@@ -1,33 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+<!-- NEW — Category card redesigned for 2-column grid. Bigger, image with name overlay -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:gravity="center">
+    android:layout_width="match_parent"
+    android:layout_height="140dp"
+    android:layout_margin="6dp"
+    app:cardBackgroundColor="@color/md_theme_secondary"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:strokeColor="@color/md_theme_outlineVariant"
+    app:strokeWidth="1dp">
 
-    <com.google.android.material.card.MaterialCardView
+    <!-- Book category image fills the card -->
+    <ImageView
+        android:id="@+id/category_image"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        app:cardBackgroundColor="@color/md_theme_secondary">
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="Category image" />
 
-        <ImageView
-            android:id="@+id/category_image"
+    <!-- NEW — Dark gradient overlay so text is readable over any image -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/category_gradient_overlay" />
+
+    <!-- Category name pinned to bottom -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/category_name"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:srcCompat="@tools:sample/avatars"/>
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="Category"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-    </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 
-    <TextView
-        android:id="@+id/category_name"
-        android:layout_width="wrap_content"
-        android:layout_height="24dp"
-        android:text="fictions"
-        android:layout_marginTop="10dp"
-        android:textAlignment="center"
-        android:textSize="12sp"
-        android:textStyle="bold"/>
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

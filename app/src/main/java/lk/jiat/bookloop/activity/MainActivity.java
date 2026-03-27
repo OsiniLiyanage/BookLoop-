@@ -2,6 +2,8 @@ package lk.jiat.bookloop.activity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,6 +23,9 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -33,6 +38,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.databinding.ActivityMainBinding;
@@ -42,18 +48,34 @@ import lk.jiat.bookloop.fragment.CartFragment;
 import lk.jiat.bookloop.fragment.CategoryFragment;
 import lk.jiat.bookloop.fragment.HelpFragment;
 import lk.jiat.bookloop.fragment.HomeFragment;
-import lk.jiat.bookloop.fragment.LibraryFragment;
+import lk.jiat.bookloop.fragment.ListingFragment;
 import lk.jiat.bookloop.fragment.MapFragment;
-import lk.jiat.bookloop.fragment.MessageFragment;
 import lk.jiat.bookloop.fragment.OrdersFragment;
 import lk.jiat.bookloop.fragment.ProfileFragment;
 import lk.jiat.bookloop.fragment.SettingsFragment;
 import lk.jiat.bookloop.fragment.WishlistFragment;
+import lk.jiat.bookloop.helper.NotificationHelper;
 import lk.jiat.bookloop.model.User;
+import lk.jiat.bookloop.receiver.ConnectivityReceiver;
+import lk.jiat.bookloop.worker.RentalReminderWorker;
 
+/*
+ * MainActivity.java
+ * The main container activity — hosts all Fragments inside fragment_container.
+ * It has:
+ *   1. A side drawer (NavigationView) for less-used pages
+ *   2. A bottom navigation bar for the 5 most-used pages
+ *
+ * CHANGES from previous version:
+ *   - Bottom nav updated to: Home, Browse(Category), Cart, Orders, Profile
+ *   - Library and Message removed (not needed for admin-rental model)
+ *   - ConnectivityReceiver registered dynamically here (Broadcast Receiver requirement)
+ *   - WorkManager scheduled here for background rental reminders (Multitasking requirement)
+ */
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         BottomNavigationView.OnItemSelectedListener {
+
     private ActivityMainBinding binding;
     private SideNavHeaderBinding sideNavHeaderBinding;
     private DrawerLayout drawerLayout;
@@ -63,6 +85,11 @@ public class MainActivity extends AppCompatActivity
     private FirebaseAuth firebaseAuth;
     private FirebaseFirestore firebaseFirestore;
 
+    // ConnectivityReceiver — registered dynamically so we can unregister it when app closes
+    // WHY dynamic registration: Keeps the receiver active only while the app is running,
+    //     not when the app is closed (saves battery).
+    private ConnectivityReceiver connectivityReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,23 +98,22 @@ public class MainActivity extends AppCompatActivity
         setContentView(binding.getRoot());
 
         View headerView = binding.sideNavigationView.getHeaderView(0);
-
         sideNavHeaderBinding = SideNavHeaderBinding.bind(headerView);
 
-
-        drawerLayout = binding.drawerLayout;
-        toolbar = binding.toolbar;
-        navigationView = binding.sideNavigationView;
+        drawerLayout       = binding.drawerLayout;
+        toolbar            = binding.toolbar;
+        navigationView     = binding.sideNavigationView;
         bottomNavigationView = binding.bottomNavigationView;
 
         setSupportActionBar(toolbar);
 
-        ActionBarDrawerToggle toggle =
-                new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
+        // Drawer toggle (hamburger icon) — opens/closes side nav
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
         drawerLayout.addDrawerListener(toggle);
-
         toggle.syncState();
 
+        // Back button handler — closes drawer first, then exits app
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -99,162 +125,205 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-
         navigationView.setNavigationItemSelectedListener(this);
         bottomNavigationView.setOnItemSelectedListener(this);
 
+        // Load HomeFragment on first launch
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment());
             navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
+            // Connect search bar to HomeFragment search
+            binding.textInputSearch.addTextChangedListener(new android.text.TextWatcher() {
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    Fragment current = getSupportFragmentManager()
+                            .findFragmentById(R.id.fragment_container);
+                    if (current instanceof HomeFragment) {
+                        ((HomeFragment) current).performSearch(s.toString());
+                    }
+                }
+                public void afterTextChanged(android.text.Editable s) {}
+            });
         }
 
-        firebaseAuth = FirebaseAuth.getInstance();
-        firebaseFirestore = FirebaseFirestore.getInstance();
+        firebaseAuth       = FirebaseAuth.getInstance();
+        firebaseFirestore  = FirebaseFirestore.getInstance();
 
-        //check and load user details
+        // Load the logged-in user's name, email, and profile picture into the drawer header
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser != null) {
             firebaseFirestore.collection("users").document(currentUser.getUid()).get()
                     .addOnSuccessListener(ds -> {
-
                         if (ds.exists()) {
                             User user = ds.toObject(User.class);
-                            sideNavHeaderBinding.headerUserName.setText(user.getName());
-                            sideNavHeaderBinding.headerUserEmail.setText(user.getEmail());
+                            if (user != null) {
+                                sideNavHeaderBinding.headerUserName.setText(user.getName());
+                                sideNavHeaderBinding.headerUserEmail.setText(user.getEmail());
 
-                            Glide.with(MainActivity.this)
-                                    .load(user.getProfilePicUrl())
-                                    .circleCrop()
-                                    .into(sideNavHeaderBinding.headerProfilePic);
+                                // Load profile picture from Firebase Storage
+                                if (user.getProfilePicUrl() != null && !user.getProfilePicUrl().isEmpty()) {
+                                    FirebaseStorage.getInstance()
+                                            .getReference("profile_images")
+                                            .child(user.getProfilePicUrl())
+                                            .getDownloadUrl()
+                                            .addOnSuccessListener(uri ->
+                                                    Glide.with(MainActivity.this)
+                                                            .load(uri)
+                                                            .circleCrop()
+                                                            .into(sideNavHeaderBinding.headerProfilePic));
+                                }
+                            }
                         } else {
-                            Log.e("Firestore", "Document does not exist");
+                            Log.e("Firestore", "User document does not exist");
                         }
+                    })
+                    .addOnFailureListener(e -> Log.e("Firestore", "Failed to load user: " + e.getMessage()));
 
-                    }).addOnFailureListener(e -> {
-                        Log.e("Firestore", "Error: " + e.getMessage());
-                    });
-
-
-            //Hide side nav login menu item
+            // Hide login, show all user-only nav items
             navigationView.getMenu().findItem(R.id.nav_login).setVisible(false);
-
-            //Show side nav menu items
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_orders).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_wishlist).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_cart).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_messages).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_logout).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_about).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_help).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_logout).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_my_library).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_map).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_category).setVisible(true);
 
-            /// Change or Set profile image
+            // Tap profile picture in drawer header → open gallery to change photo
             sideNavHeaderBinding.headerProfilePic.setOnClickListener(v -> {
-
                 Intent intent = new Intent();
                 intent.setType("image/*");
                 intent.setAction(Intent.ACTION_GET_CONTENT);
-
                 activityResultLauncher.launch(intent);
             });
-
         }
 
+        // ── Requirement: Notifications ────────────────────────────────────────
+        // Create the notification channels so the OS knows about them.
+        // WHY here: createNotificationChannels() must be called before any notification is shown.
+        NotificationHelper.createNotificationChannels(this);
+
+        // ── Requirement: Multitasking (Background Tasks) ──────────────────────
+        // WorkManager runs RentalReminderWorker every 12 hours in the background.
+        // It checks if any rented book is due back soon and fires a reminder notification.
+        // WHY WorkManager: Unlike Thread or AsyncTask, WorkManager survives app restarts.
+        PeriodicWorkRequest reminderWork = new PeriodicWorkRequest.Builder(
+                RentalReminderWorker.class, 12, TimeUnit.HOURS).build();
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "rental_reminder",
+                ExistingPeriodicWorkPolicy.KEEP,  // don't schedule twice if already queued
+                reminderWork);
+
+        // ── Requirement: Broadcast Receiver (dynamic registration) ────────────
+        // We register the receiver here so it receives network-change broadcasts.
+        // The static registration in AndroidManifest.xml also exists as a backup.
+        // WHY dynamic: Gives us a reference to the receiver so we can unregister
+        //     it in onDestroy() and prevent memory leaks.
+        connectivityReceiver = new ConnectivityReceiver();
+        ConnectivityReceiver.setConnectivityListener(isConnected -> {
+            Log.i("Connectivity", "Network connected: " + isConnected);
+            // Could show/hide an offline banner here in a future update
+        });
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(connectivityReceiver, filter);
+        // Wire search bar to ListingFragment
+        binding.textInputSearch.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+                if (f instanceof ListingFragment) {
+                    ((ListingFragment) f).filterProducts(s.toString());
+                }
+            }
+            public void afterTextChanged(android.text.Editable s) {}
+        });
     }
 
+    // Handle profile picture change from gallery
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == Activity.RESULT_OK) {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
-                    Log.i("ImageURI", uri.getPath());
 
                     Glide.with(MainActivity.this)
                             .load(uri)
                             .circleCrop()
                             .into(sideNavHeaderBinding.headerProfilePic);
 
-
+                    // Upload new image to Firebase Storage, save ID to Firestore
                     String imageId = UUID.randomUUID().toString();
-
                     FirebaseStorage storage = FirebaseStorage.getInstance();
-
-                    StorageReference imageReference = storage.getReference("profile_images").child(imageId);
-                    imageReference.putFile(uri)
-                            .addOnSuccessListener(taskSnapshot -> {
-
-                                firebaseFirestore.collection("users")
-                                        .document(firebaseAuth.getUid())
-                                        .update("profilePicUrl", imageId)
-                                        .addOnSuccessListener(aVoid -> {
-                                            Toast.makeText(MainActivity.this, "Profile image changed!", Toast.LENGTH_SHORT).show();
-                                        });
-                            });
-
+                    StorageReference imageRef = storage.getReference("profile_images").child(imageId);
+                    imageRef.putFile(uri)
+                            .addOnSuccessListener(taskSnapshot ->
+                                    firebaseFirestore.collection("users")
+                                            .document(firebaseAuth.getUid())
+                                            .update("profilePicUrl", imageId)
+                                            .addOnSuccessListener(aVoid ->
+                                                    Toast.makeText(MainActivity.this,
+                                                            "Profile image updated!", Toast.LENGTH_SHORT).show()));
                 }
-            }
-    );
-
+            });
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-        Menu navMenu = navigationView.getMenu();
+
+        // Clear all checked states before setting the new one
+        Menu navMenu       = navigationView.getMenu();
         Menu bottomNavMenu = bottomNavigationView.getMenu();
+        for (int i = 0; i < navMenu.size(); i++)       navMenu.getItem(i).setChecked(false);
+        for (int i = 0; i < bottomNavMenu.size(); i++) bottomNavMenu.getItem(i).setChecked(false);
 
-        for (int i = 0; i < navMenu.size(); i++) {
-            navMenu.getItem(i).setChecked(false);
-        }
-
-        for (int i = 0; i < bottomNavMenu.size(); i++) {
-            bottomNavMenu.getItem(i).setChecked(false);
-        }
-
+        // ── Bottom nav: Home ─────────────────────────────────────────────────
         if (itemId == R.id.nav_home || itemId == R.id.bottom_nav_home) {
             loadFragment(new HomeFragment());
             navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
 
-        } else if (itemId == R.id.nav_map || itemId == R.id.bottom_nav_map) {
-            loadFragment(new MapFragment());
-            navigationView.getMenu().findItem(R.id.nav_map).setChecked(true);
-            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_map).setChecked(true);
+            // ── Bottom nav: Browse (Category) ────────────────────────────────────
+        } else if (itemId == R.id.nav_category || itemId == R.id.bottom_nav_category) {
+            loadFragment(new CategoryFragment());
+            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_category).setChecked(true);
+            if (navigationView.getMenu().findItem(R.id.nav_category) != null)
+                navigationView.getMenu().findItem(R.id.nav_category).setChecked(true);
 
-        } else if (itemId == R.id.nav_my_library || itemId == R.id.bottom_nav_my_library) {
-            loadFragment(new LibraryFragment());
-            navigationView.getMenu().findItem(R.id.nav_my_library).setChecked(true);
-            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_my_library).setChecked(true);
-
-        } else if (itemId == R.id.nav_profile || itemId == R.id.bottom_nav_profile) {
-            if (firebaseAuth.getCurrentUser() == null){
-                Intent intent = new Intent(MainActivity.this, SignInActivity.class);
-                startActivity(intent);
-                finish();
-            }
-            loadFragment(new ProfileFragment());
-            navigationView.getMenu().findItem(R.id.nav_profile).setChecked(true);
-            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_profile).setChecked(true);
-
-        } else if (itemId == R.id.nav_cart) {
-            if (firebaseAuth.getCurrentUser() == null){
-                Intent intent = new Intent(MainActivity.this, SignInActivity.class);
-                startActivity(intent);
-                finish();
+            // ── Bottom nav: Cart ─────────────────────────────────────────────────
+        } else if (itemId == R.id.nav_cart || itemId == R.id.bottom_nav_cart) {
+            if (firebaseAuth.getCurrentUser() == null) {
+                startActivity(new Intent(this, SignInActivity.class));
+                return true;
             }
             loadFragment(new CartFragment());
-            navigationView.getMenu().findItem(R.id.nav_cart).setChecked(true);
+            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_cart).setChecked(true);
+            if (navigationView.getMenu().findItem(R.id.nav_cart) != null)
+                navigationView.getMenu().findItem(R.id.nav_cart).setChecked(true);
 
-        } else if (itemId == R.id.nav_orders) {
+            // ── Bottom nav: Orders ───────────────────────────────────────────────
+        } else if (itemId == R.id.nav_orders || itemId == R.id.bottom_nav_orders) {
             loadFragment(new OrdersFragment());
-            navigationView.getMenu().findItem(R.id.nav_orders).setChecked(true);
+            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_orders).setChecked(true);
+            if (navigationView.getMenu().findItem(R.id.nav_orders) != null)
+                navigationView.getMenu().findItem(R.id.nav_orders).setChecked(true);
 
-        } else if (itemId == R.id.nav_messages) {
-            loadFragment(new MessageFragment());
-            navigationView.getMenu().findItem(R.id.nav_messages).setChecked(true);
+            // ── Bottom nav: Profile ──────────────────────────────────────────────
+        } else if (itemId == R.id.nav_profile || itemId == R.id.bottom_nav_profile) {
+            if (firebaseAuth.getCurrentUser() == null) {
+                startActivity(new Intent(this, SignInActivity.class));
+                return true;
+            }
+            loadFragment(new ProfileFragment());
+            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_profile).setChecked(true);
+            if (navigationView.getMenu().findItem(R.id.nav_profile) != null)
+                navigationView.getMenu().findItem(R.id.nav_profile).setChecked(true);
+
+            // ── Side nav only ────────────────────────────────────────────────────
+        } else if (itemId == R.id.nav_map) {
+            loadFragment(new MapFragment());
+            navigationView.getMenu().findItem(R.id.nav_map).setChecked(true);
 
         } else if (itemId == R.id.nav_wishlist) {
             loadFragment(new WishlistFragment());
@@ -272,41 +341,38 @@ public class MainActivity extends AppCompatActivity
             loadFragment(new AboutFragment());
             navigationView.getMenu().findItem(R.id.nav_about).setChecked(true);
 
-        } else if (itemId == R.id.nav_category) {
-            loadFragment(new CategoryFragment());
-            navigationView.getMenu().findItem(R.id.nav_category).setChecked(true);
-
-
         } else if (itemId == R.id.nav_login) {
-            Intent intent = new Intent(MainActivity.this, SignInActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, SignInActivity.class));
 
         } else if (itemId == R.id.nav_logout) {
+            // Sign out and reset the nav back to guest state
             firebaseAuth.signOut();
             loadFragment(new HomeFragment());
             navigationView.getMenu().clear();
             navigationView.inflateMenu(R.menu.side_nav_menu);
-
-            //View headerView = navigationView.getHeaderView(0);
-
             navigationView.removeHeaderView(sideNavHeaderBinding.getRoot());
             navigationView.inflateHeaderView(R.layout.side_nav_header);
-
         }
 
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
         }
-
         return true;
     }
 
     private void loadFragment(Fragment fragment) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragment_container, fragment);
-        transaction.commit();
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.replace(R.id.fragment_container, fragment);
+        ft.commit();
     }
 
-
+    // Unregister the BroadcastReceiver when activity is destroyed to prevent memory leaks
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (connectivityReceiver != null) {
+            unregisterReceiver(connectivityReceiver);
+        }
+    }
 }

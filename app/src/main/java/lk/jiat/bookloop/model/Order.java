@@ -2,7 +2,6 @@ package lk.jiat.bookloop.model;
 
 import com.google.firebase.Timestamp;
 
-import java.util.Date;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -18,7 +17,7 @@ public class Order {
     private String orderId;
     private String userId;
     private double totalAmount;
-    private String status;
+    private String status;      // "PAID", "PROCESSING", "DELIVERED", "RETURNED"
     private Timestamp orderDate;
     private List<OrderItem> orderItems;
     private Address shippingAddress;
@@ -30,9 +29,12 @@ public class Order {
     @NoArgsConstructor
     public static class OrderItem {
         private String productId;
-        private double unitPrice;
-        private int quantity;
-        private List<OrderItem.Attribute> attributes;
+        private String productTitle;    // NEW — stored for display without extra Firestore query
+        private String productImage;    // NEW — first image URL for thumbnail in orders list
+        private double unitPrice;       // price per week
+        private int quantity;           // copies
+        private int rentalWeeks;        // NEW — how many weeks (fixes missing weeks in order calc)
+        private List<Attribute> attributes;
 
         @Data
         @Builder
@@ -42,7 +44,6 @@ public class Order {
             private String name;
             private String value;
         }
-
     }
 
     @Data
@@ -58,5 +59,4 @@ public class Order {
         private String city;
         private String postcode;
     }
-
 }

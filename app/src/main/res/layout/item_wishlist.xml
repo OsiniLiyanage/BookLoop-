@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wishlist book card — has 3 actions: View, Move to Cart, Remove -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="3dp"
+    app:strokeColor="@color/md_theme_outlineVariant"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <!-- Book cover image -->
+        <ImageView
+            android:id="@+id/wishlist_book_image"
+            android:layout_width="60dp"
+            android:layout_height="84dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_launcher_foreground"
+            android:contentDescription="Book cover" />
+
+        <!-- Book details + action buttons -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/wishlist_book_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="Book Title"
+                android:textColor="@color/md_theme_onSurface"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/wishlist_book_author"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Author Name"
+                android:textColor="@color/md_theme_onSurfaceVariant"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/wishlist_book_price"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="LKR 500/week"
+                android:textColor="@color/md_theme_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <!-- Action buttons row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <!-- "View" button — opens ProductDetailsFragment -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/wishlist_btn_rent"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="View"
+                    android:textSize="11sp"
+                    app:cornerRadius="8dp" />
+
+                <!-- "Move to Cart" button — adds to cart and removes from wishlist -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/wishlist_btn_move_to_cart"
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1.3"
+                    android:text="Add to Cart"
+                    android:textSize="11sp"
+                    app:backgroundTint="@color/md_theme_primary"
+                    app:cornerRadius="8dp" />
+
+                <!-- Remove button (trash icon) — removes from wishlist only -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/wishlist_btn_remove"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:padding="0dp"
+                    app:cornerRadius="8dp"
+                    app:icon="@drawable/delete_forever_24px"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

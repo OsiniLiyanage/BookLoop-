@@ -1,7 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- INTERNET: Required for Firebase (Firestore, Auth) and Glide image loading -->
     <uses-permission android:name="android.permission.INTERNET" />
+<!--    <uses-permission android:name="android.permission.CAMERA" />-->
+<!--    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />-->
+
+    <!-- ACCESS_NETWORK_STATE: Required by ConnectivityReceiver to check if online/offline -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- POST_NOTIFICATIONS: Required on Android 13+ (API 33+) to show notifications.
+         NotificationHelper will silently skip if permission not granted — no crash. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- RECEIVE_BOOT_COMPLETED: Allows app to restart scheduled reminders after phone reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -11,25 +26,41 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BookLoop">
+
+        <!-- Activities -->
         <activity
             android:name=".activity.SignUpActivity"
             android:exported="false" />
+
         <activity
             android:name=".activity.SignInActivity"
             android:exported="false" />
+
+        <!-- SplashActivity is the LAUNCHER — first screen the user sees -->
         <activity
             android:name=".activity.SplashActivity"
             android:exported="true">
-<!--            android:theme="@style/Theme.BookLoop">-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".activity.MainActivity"
             android:exported="true" />
+
+        <!-- ConnectivityReceiver — registered here so Android knows it exists.
+             WHY exported=false: Only our app broadcasts to it, no external apps.
+             The intent-filter tells Android WHEN to call it (network changes). -->
+        <receiver
+            android:name=".receiver.ConnectivityReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

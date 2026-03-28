@@ -3,19 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- INTERNET: Required for Firebase (Firestore, Auth) and Glide image loading -->
-    <uses-permission android:name="android.permission.INTERNET" />
-<!--    <uses-permission android:name="android.permission.CAMERA" />-->
-<!--    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />-->
-
+    <uses-permission android:name="android.permission.INTERNET" /> <!-- <uses-permission android:name="android.permission.CAMERA" /> -->
+    <!-- <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> -->
     <!-- ACCESS_NETWORK_STATE: Required by ConnectivityReceiver to check if online/offline -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- POST_NOTIFICATIONS: Required on Android 13+ (API 33+) to show notifications.
-         NotificationHelper will silently skip if permission not granted — no crash. -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- RECEIVE_BOOT_COMPLETED: Allows app to restart scheduled reminders after phone reboot -->
+    <!--
+ POST_NOTIFICATIONS: Required on Android 13+ (API 33+) to show notifications.
+         NotificationHelper will silently skip if permission not granted — no crash.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- RECEIVE_BOOT_COMPLETED: Allows app to restart scheduled reminders after phone reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -27,32 +26,45 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BookLoop">
 
+        <!--
+             TODO: Before you run your application, you need a Google Maps API key.
+
+             To get one, follow the directions here:
+
+                https://developers.google.com/maps/documentation/android-sdk/get-api-key
+
+             Once you have your API key (it starts with "AIza"), define a new property in your
+             project's local.properties file (e.g. MAPS_API_KEY=Aiza...), and replace the
+             "YOUR_API_KEY" string in this file with "${MAPS_API_KEY}".
+        -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDIK1Hd29CwsXchoRla9QlAg6qt_h3Ij3Q" />
+
+
         <!-- Activities -->
         <activity
             android:name=".activity.SignUpActivity"
             android:exported="false" />
-
         <activity
             android:name=".activity.SignInActivity"
-            android:exported="false" />
-
-        <!-- SplashActivity is the LAUNCHER — first screen the user sees -->
-        <activity
-            android:name=".activity.SplashActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
+            android:exported="false" /> <!-- SplashActivity is the LAUNCHER — first screen the user sees -->
+         <activity
+         android:name=".activity.SplashActivity"
+         android:exported="true">
+         <intent-filter>
+         <action android:name="android.intent.action.MAIN" />
+         <category android:name="android.intent.category.LAUNCHER" />
+         </intent-filter>
+         </activity>
         <activity
             android:name=".activity.MainActivity"
             android:exported="true" />
-
-        <!-- ConnectivityReceiver — registered here so Android knows it exists.
+        <!--
+ ConnectivityReceiver — registered here so Android knows it exists.
              WHY exported=false: Only our app broadcasts to it, no external apps.
-             The intent-filter tells Android WHEN to call it (network changes). -->
+             The intent-filter tells Android WHEN to call it (network changes).
+        -->
         <receiver
             android:name=".receiver.ConnectivityReceiver"
             android:exported="false">
@@ -60,7 +72,6 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
-
     </application>
 
 </manifest>

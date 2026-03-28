@@ -1,11 +1,18 @@
 plugins {
     alias(libs.plugins.android.application)
     id 'com.google.gms.google-services'
+    id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
+
 }
 
 android {
     namespace 'lk.jiat.bookloop'
     compileSdk 36
+
+    buildFeatures {
+        buildConfig true
+
+    }
 
     defaultConfig {
         applicationId "lk.jiat.bookloop"
@@ -31,6 +38,9 @@ android {
     buildFeatures{
         viewBinding true
     }
+
+
+
 }
 
 dependencies {
@@ -52,7 +62,14 @@ dependencies {
     implementation(libs.dotsindicator)
     implementation libs.payhere.android.sdk
     implementation libs.gson
-    implementation 'androidx.work:work-runtime:2.9.0'
-    implementation 'com.google.android.gms:play-services-maps:18.2.0'
+    implementation libs.work.runtime
+    implementation libs.play.services.location
+    implementation libs.play.services.maps
+    implementation libs.google.maps.services
+    implementation libs.android.maps.utils
+    implementation(libs.retrofit)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.converter.gson)
 
 }

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    fragment_all_books.xml
+    Layout for AllBooksFragment — a full-screen book grid.
+    Used when user taps "See All" on Top Rated or New Arrivals sections.
+
+    Structure:
+      1. Top bar: back arrow + page title
+      2. RecyclerView — 2-column grid of books using item_listing.xml
+      3. Empty state text — shown when no results or load error
+      4. Loading spinner — shown while Firestore is fetching
+
+    NOTE: The search bar that used to be here (all_books_search EditText) has been
+    removed. The MainActivity toolbar search bar already handles all search — having
+    a second search input directly below the toolbar was confusing and redundant.
+    Search still works: MainActivity passes the query via the "initialQuery" argument
+    and AllBooksFragment.filterProducts() is called from MainActivity on text change.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/md_theme_background">
+
+    <!-- ── Top bar: back button + title ──────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
+        android:background="@color/md_theme_surface">
+
+        <ImageButton
+            android:id="@+id/all_books_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/arrow_back_24px"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back" />
+
+        <TextView
+            android:id="@+id/all_books_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="All Books"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/md_theme_onSurface" />
+
+    </LinearLayout>
+
+    <!-- ── Loading spinner — visible while Firestore is fetching ────────── -->
+    <ProgressBar
+        android:id="@+id/all_books_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="40dp"
+        android:visibility="visible" />
+
+    <!-- ── Empty state — shown when no results ───────────────────────────── -->
+    <TextView
+        android:id="@+id/all_books_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="60dp"
+        android:gravity="center"
+        android:text="No books found."
+        android:textSize="15sp"
+        android:textColor="@color/md_theme_onSurfaceVariant"
+        android:visibility="gone" />
+
+    <!-- ── Book grid ─────────────────────────────────────────────────────── -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/all_books_recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="4dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>

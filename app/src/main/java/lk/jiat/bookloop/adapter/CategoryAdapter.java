@@ -7,30 +7,29 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.List;
 
 import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.model.Category;
-import lombok.val;
 
-public class  CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
+// FIX: Removed FirebaseStorage.getReference(imageUrl) — this crashes with
+//      "location should not be a full URL" because category images are now
+//      stored as full https:// download URLs (not storage paths).
+//      Glide can load https:// URLs directly — no FirebaseStorage needed.
+public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
 
     private List<Category> categories;
     private OnCategoryClickListener listener;
-    private FirebaseStorage storage;
 
     public CategoryAdapter(List<Category> categories, OnCategoryClickListener listener) {
         this.categories = categories;
         this.listener = listener;
-        storage = FirebaseStorage.getInstance();
     }
 
     @NonNull
@@ -38,33 +37,28 @@ public class  CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewH
     public CategoryAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_category, parent, false);
-
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull CategoryAdapter.ViewHolder holder, int position) {
         Category category = categories.get(position);
+
         holder.categoryName.setText(category.getName());
-        storage.getReference(category.getImageUrl())
-                .getDownloadUrl()
-                .addOnSuccessListener(uri -> {
 
-                    //Log.i("LoadImages",uri.toString());
+        // imageUrl is already a full https:// download URL — load directly with Glide
+        if (category.getImageUrl() != null && !category.getImageUrl().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(category.getImageUrl())
+                    .centerCrop()
+                    .placeholder(R.color.md_theme_surfaceVariant)
+                    .into(holder.categoryImage);
+        }
 
-                    Glide.with(holder.itemView.getContext())
-                            .load(uri)
-                            .centerCrop()
-                            .into(holder.categoryImage);
-                });
-
-
-        holder.itemView.setOnClickListener(v->{
-
+        holder.itemView.setOnClickListener(v -> {
             Animation animation = AnimationUtils.loadAnimation(v.getContext(), R.anim.click_animation);
             v.startAnimation(animation);
-
-            if (listener != null){
+            if (listener != null) {
                 listener.onCategoryClick(category);
             }
         });
@@ -75,18 +69,18 @@ public class  CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewH
         return categories.size();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder{
+    public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView categoryImage;
         TextView categoryName;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             categoryImage = itemView.findViewById(R.id.category_image);
-            categoryName = itemView.findViewById(R.id.category_name);
+            categoryName  = itemView.findViewById(R.id.category_name);
         }
     }
 
-    public interface OnCategoryClickListener{
+    public interface OnCategoryClickListener {
         void onCategoryClick(Category category);
     }
 }

@@ -44,6 +44,7 @@ import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.databinding.ActivityMainBinding;
 import lk.jiat.bookloop.databinding.SideNavHeaderBinding;
 import lk.jiat.bookloop.fragment.AboutFragment;
+import lk.jiat.bookloop.fragment.AllBooksFragment;
 import lk.jiat.bookloop.fragment.CartFragment;
 import lk.jiat.bookloop.fragment.CategoryFragment;
 import lk.jiat.bookloop.fragment.HelpFragment;
@@ -62,15 +63,16 @@ import lk.jiat.bookloop.worker.RentalReminderWorker;
 /*
  * MainActivity.java
  * The main container activity — hosts all Fragments inside fragment_container.
- * It has:
- *   1. A side drawer (NavigationView) for less-used pages
- *   2. A bottom navigation bar for the 5 most-used pages
  *
- * CHANGES from previous version:
- *   - Bottom nav updated to: Home, Browse(Category), Cart, Orders, Profile
- *   - Library and Message removed (not needed for admin-rental model)
- *   - ConnectivityReceiver registered dynamically here (Broadcast Receiver requirement)
- *   - WorkManager scheduled here for background rental reminders (Multitasking requirement)
+ * Bottom nav: Home, Map, Cart, Orders, Profile
+ * Side drawer: all secondary navigation
+ *
+ * SEARCH BAR BEHAVIOUR:
+ *   - On HomeFragment: live search filters the home sections
+ *   - On ListingFragment: live search filters the category listing
+ *   - On AllBooksFragment: live search filters the all-books grid
+ *   - On any OTHER fragment: pressing Enter/search launches AllBooksFragment
+ *     with the query pre-filled so the user always gets results
  */
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -85,9 +87,6 @@ public class MainActivity extends AppCompatActivity
     private FirebaseAuth firebaseAuth;
     private FirebaseFirestore firebaseFirestore;
 
-    // ConnectivityReceiver — registered dynamically so we can unregister it when app closes
-    // WHY dynamic registration: Keeps the receiver active only while the app is running,
-    //     not when the app is closed (saves battery).
     private ConnectivityReceiver connectivityReceiver;
 
     @Override
@@ -100,20 +99,18 @@ public class MainActivity extends AppCompatActivity
         View headerView = binding.sideNavigationView.getHeaderView(0);
         sideNavHeaderBinding = SideNavHeaderBinding.bind(headerView);
 
-        drawerLayout       = binding.drawerLayout;
-        toolbar            = binding.toolbar;
-        navigationView     = binding.sideNavigationView;
+        drawerLayout         = binding.drawerLayout;
+        toolbar              = binding.toolbar;
+        navigationView       = binding.sideNavigationView;
         bottomNavigationView = binding.bottomNavigationView;
 
         setSupportActionBar(toolbar);
 
-        // Drawer toggle (hamburger icon) — opens/closes side nav
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.drawer_open, R.string.drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
-        // Back button handler — closes drawer first, then exits app
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -128,29 +125,53 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
         bottomNavigationView.setOnItemSelectedListener(this);
 
-        // Load HomeFragment on first launch
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment());
             navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
-            // Connect search bar to HomeFragment search
-            binding.textInputSearch.addTextChangedListener(new android.text.TextWatcher() {
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    Fragment current = getSupportFragmentManager()
-                            .findFragmentById(R.id.fragment_container);
-                    if (current instanceof HomeFragment) {
-                        ((HomeFragment) current).performSearch(s.toString());
-                    }
-                }
-                public void afterTextChanged(android.text.Editable s) {}
-            });
         }
 
-        firebaseAuth       = FirebaseAuth.getInstance();
-        firebaseFirestore  = FirebaseFirestore.getInstance();
+        // ── Search bar wiring ─────────────────────────────────────────────────
+        // The header search bar works on EVERY screen:
+        //   • HomeFragment      → live search within home sections
+        //   • ListingFragment   → live filter of category books
+        //   • AllBooksFragment  → live filter of all-books grid
+        //   • Everything else   → on text change, navigate to AllBooksFragment
+        //     so the user always gets a result no matter which screen they're on
+        binding.textInputSearch.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-        // Load the logged-in user's name, email, and profile picture into the drawer header
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                Fragment current = getSupportFragmentManager()
+                        .findFragmentById(R.id.fragment_container);
+
+                if (current instanceof HomeFragment) {
+                    // Home: live search within home sections
+                    ((HomeFragment) current).performSearch(s.toString());
+
+                } else if (current instanceof ListingFragment) {
+                    // Category listing: filter in memory
+                    ((ListingFragment) current).filterProducts(s.toString());
+
+                } else if (current instanceof AllBooksFragment) {
+                    // All-books screen: filter its grid
+                    ((AllBooksFragment) current).filterProducts(s.toString());
+
+                } else if (s.length() >= 2) {
+                    // Any other screen + user has typed at least 2 chars →
+                    // open AllBooksFragment with the search term pre-loaded.
+                    // We use >= 2 to avoid launching on every single keystroke.
+                    openAllBooksWithQuery(s.toString().trim());
+                }
+            }
+
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
+        firebaseAuth      = FirebaseAuth.getInstance();
+        firebaseFirestore = FirebaseFirestore.getInstance();
+
+        // Load the logged-in user's details into the drawer header
         FirebaseUser currentUser = firebaseAuth.getCurrentUser();
         if (currentUser != null) {
             firebaseFirestore.collection("users").document(currentUser.getUid()).get()
@@ -161,7 +182,6 @@ public class MainActivity extends AppCompatActivity
                                 sideNavHeaderBinding.headerUserName.setText(user.getName());
                                 sideNavHeaderBinding.headerUserEmail.setText(user.getEmail());
 
-                                // Load profile picture from Firebase Storage
                                 if (user.getProfilePicUrl() != null && !user.getProfilePicUrl().isEmpty()) {
                                     FirebaseStorage.getInstance()
                                             .getReference("profile_images")
@@ -174,13 +194,10 @@ public class MainActivity extends AppCompatActivity
                                                             .into(sideNavHeaderBinding.headerProfilePic));
                                 }
                             }
-                        } else {
-                            Log.e("Firestore", "User document does not exist");
                         }
                     })
                     .addOnFailureListener(e -> Log.e("Firestore", "Failed to load user: " + e.getMessage()));
 
-            // Hide login, show all user-only nav items
             navigationView.getMenu().findItem(R.id.nav_login).setVisible(false);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_orders).setVisible(true);
@@ -192,7 +209,6 @@ public class MainActivity extends AppCompatActivity
             navigationView.getMenu().findItem(R.id.nav_map).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_category).setVisible(true);
 
-            // Tap profile picture in drawer header → open gallery to change photo
             sideNavHeaderBinding.headerProfilePic.setOnClickListener(v -> {
                 Intent intent = new Intent();
                 intent.setType("image/*");
@@ -201,48 +217,44 @@ public class MainActivity extends AppCompatActivity
             });
         }
 
-        // ── Requirement: Notifications ────────────────────────────────────────
-        // Create the notification channels so the OS knows about them.
-        // WHY here: createNotificationChannels() must be called before any notification is shown.
         NotificationHelper.createNotificationChannels(this);
 
-        // ── Requirement: Multitasking (Background Tasks) ──────────────────────
-        // WorkManager runs RentalReminderWorker every 12 hours in the background.
-        // It checks if any rented book is due back soon and fires a reminder notification.
-        // WHY WorkManager: Unlike Thread or AsyncTask, WorkManager survives app restarts.
         PeriodicWorkRequest reminderWork = new PeriodicWorkRequest.Builder(
                 RentalReminderWorker.class, 12, TimeUnit.HOURS).build();
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "rental_reminder",
-                ExistingPeriodicWorkPolicy.KEEP,  // don't schedule twice if already queued
+                ExistingPeriodicWorkPolicy.KEEP,
                 reminderWork);
 
-        // ── Requirement: Broadcast Receiver (dynamic registration) ────────────
-        // We register the receiver here so it receives network-change broadcasts.
-        // The static registration in AndroidManifest.xml also exists as a backup.
-        // WHY dynamic: Gives us a reference to the receiver so we can unregister
-        //     it in onDestroy() and prevent memory leaks.
         connectivityReceiver = new ConnectivityReceiver();
-        ConnectivityReceiver.setConnectivityListener(isConnected -> {
-            Log.i("Connectivity", "Network connected: " + isConnected);
-            // Could show/hide an offline banner here in a future update
-        });
+        ConnectivityReceiver.setConnectivityListener(isConnected ->
+                Log.i("Connectivity", "Network connected: " + isConnected));
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(connectivityReceiver, filter);
-        // Wire search bar to ListingFragment
-        binding.textInputSearch.addTextChangedListener(new android.text.TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-                if (f instanceof ListingFragment) {
-                    ((ListingFragment) f).filterProducts(s.toString());
-                }
-            }
-            public void afterTextChanged(android.text.Editable s) {}
-        });
     }
 
-    // Handle profile picture change from gallery
+    // Navigate to AllBooksFragment and pass the search query so it pre-filters on load
+    private void openAllBooksWithQuery(String query) {
+        // Don't stack multiple AllBooksFragments — pop back to one if already there
+        Fragment current = getSupportFragmentManager()
+                .findFragmentById(R.id.fragment_container);
+        if (current instanceof AllBooksFragment) {
+            // Already on AllBooksFragment — just call filterProducts directly
+            ((AllBooksFragment) current).filterProducts(query);
+            return;
+        }
+
+        Bundle bundle = new Bundle();
+        bundle.putString("mode", "search");
+        bundle.putString("initialQuery", query);
+        AllBooksFragment fragment = new AllBooksFragment();
+        fragment.setArguments(bundle);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit();
+    }
+
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
@@ -253,7 +265,6 @@ public class MainActivity extends AppCompatActivity
                             .circleCrop()
                             .into(sideNavHeaderBinding.headerProfilePic);
 
-                    // Upload new image to Firebase Storage, save ID to Firestore
                     String imageId = UUID.randomUUID().toString();
                     FirebaseStorage storage = FirebaseStorage.getInstance();
                     StorageReference imageRef = storage.getReference("profile_images").child(imageId);
@@ -272,26 +283,31 @@ public class MainActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
 
-        // Clear all checked states before setting the new one
         Menu navMenu       = navigationView.getMenu();
         Menu bottomNavMenu = bottomNavigationView.getMenu();
         for (int i = 0; i < navMenu.size(); i++)       navMenu.getItem(i).setChecked(false);
         for (int i = 0; i < bottomNavMenu.size(); i++) bottomNavMenu.getItem(i).setChecked(false);
 
-        // ── Bottom nav: Home ─────────────────────────────────────────────────
+        // ── Home ──────────────────────────────────────────────────────────────
         if (itemId == R.id.nav_home || itemId == R.id.bottom_nav_home) {
             loadFragment(new HomeFragment());
             navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
+            binding.textInputSearch.setText("");
 
-            // ── Bottom nav: Browse (Category) ────────────────────────────────────
-        } else if (itemId == R.id.nav_category || itemId == R.id.bottom_nav_category) {
+            // ── Map (bottom nav) ─────────────────────────────────────────────────
+        } else if (itemId == R.id.bottom_nav_map || itemId == R.id.nav_map) {
+            loadFragment(new MapFragment());
+            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_map).setChecked(true);
+            if (navigationView.getMenu().findItem(R.id.nav_map) != null)
+                navigationView.getMenu().findItem(R.id.nav_map).setChecked(true);
+
+            // ── Browse / Categories (side drawer only now) ───────────────────────
+        } else if (itemId == R.id.nav_category) {
             loadFragment(new CategoryFragment());
-            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_category).setChecked(true);
-            if (navigationView.getMenu().findItem(R.id.nav_category) != null)
-                navigationView.getMenu().findItem(R.id.nav_category).setChecked(true);
+            navigationView.getMenu().findItem(R.id.nav_category).setChecked(true);
 
-            // ── Bottom nav: Cart ─────────────────────────────────────────────────
+            // ── Cart ─────────────────────────────────────────────────────────────
         } else if (itemId == R.id.nav_cart || itemId == R.id.bottom_nav_cart) {
             if (firebaseAuth.getCurrentUser() == null) {
                 startActivity(new Intent(this, SignInActivity.class));
@@ -302,14 +318,14 @@ public class MainActivity extends AppCompatActivity
             if (navigationView.getMenu().findItem(R.id.nav_cart) != null)
                 navigationView.getMenu().findItem(R.id.nav_cart).setChecked(true);
 
-            // ── Bottom nav: Orders ───────────────────────────────────────────────
+            // ── Orders ───────────────────────────────────────────────────────────
         } else if (itemId == R.id.nav_orders || itemId == R.id.bottom_nav_orders) {
             loadFragment(new OrdersFragment());
             bottomNavigationView.getMenu().findItem(R.id.bottom_nav_orders).setChecked(true);
             if (navigationView.getMenu().findItem(R.id.nav_orders) != null)
                 navigationView.getMenu().findItem(R.id.nav_orders).setChecked(true);
 
-            // ── Bottom nav: Profile ──────────────────────────────────────────────
+            // ── Profile ──────────────────────────────────────────────────────────
         } else if (itemId == R.id.nav_profile || itemId == R.id.bottom_nav_profile) {
             if (firebaseAuth.getCurrentUser() == null) {
                 startActivity(new Intent(this, SignInActivity.class));
@@ -320,11 +336,7 @@ public class MainActivity extends AppCompatActivity
             if (navigationView.getMenu().findItem(R.id.nav_profile) != null)
                 navigationView.getMenu().findItem(R.id.nav_profile).setChecked(true);
 
-            // ── Side nav only ────────────────────────────────────────────────────
-        } else if (itemId == R.id.nav_map) {
-            loadFragment(new MapFragment());
-            navigationView.getMenu().findItem(R.id.nav_map).setChecked(true);
-
+            // ── Side drawer only ─────────────────────────────────────────────────
         } else if (itemId == R.id.nav_wishlist) {
             loadFragment(new WishlistFragment());
             navigationView.getMenu().findItem(R.id.nav_wishlist).setChecked(true);
@@ -345,13 +357,13 @@ public class MainActivity extends AppCompatActivity
             startActivity(new Intent(this, SignInActivity.class));
 
         } else if (itemId == R.id.nav_logout) {
-            // Sign out and reset the nav back to guest state
             firebaseAuth.signOut();
             loadFragment(new HomeFragment());
             navigationView.getMenu().clear();
             navigationView.inflateMenu(R.menu.side_nav_menu);
             navigationView.removeHeaderView(sideNavHeaderBinding.getRoot());
             navigationView.inflateHeaderView(R.layout.side_nav_header);
+            binding.textInputSearch.setText("");
         }
 
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
@@ -367,7 +379,6 @@ public class MainActivity extends AppCompatActivity
         ft.commit();
     }
 
-    // Unregister the BroadcastReceiver when activity is destroyed to prevent memory leaks
     @Override
     protected void onDestroy() {
         super.onDestroy();

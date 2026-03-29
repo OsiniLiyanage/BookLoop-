@@ -9,34 +9,35 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.storage.FirebaseStorage;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import lk.jiat.bookloop.R;
 
-// ProductSliderAdapter — used in ProductDetailsFragment for the book image slider (ViewPager2).
-//
-// WHY IMAGES WERE BLANK BEFORE:
-//   The images list from Firestore contains Storage paths like "books/cover.jpg".
-//   Glide.load("books/cover.jpg") does nothing — it's not a real URL.
-//   Glide needs an https:// URL.
-//
-// THE FIX:
-//   For each path, call FirebaseStorage.getReference(path).getDownloadUrl()
-//   to get the real https:// download URL, then pass that to Glide.
-//
-// HOW TO UPLOAD BOOK IMAGES:
-//   1. Firebase Console → Storage → create folder "books"
-//   2. Upload image, e.g. "harry_potter.jpg" → full Storage path = "books/harry_potter.jpg"
-//   3. In Firestore product document, set images array to: ["books/harry_potter.jpg"]
-//   4. Image loads automatically — no code change needed.
+/**
+ * ProductSliderAdapter
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Displays a horizontal image slider for a product's images inside a ViewPager2.
+ *
+ * IMAGE LOADING STRATEGY:
+ *   - Admin uploads images → stored in Firebase Storage: product_images/{docId}/{file}
+ *   - Download URLs saved in Firestore: products/{doc}/images: ["https://...", ...]
+ *   - This adapter receives that List<String> of HTTPS URLs → loads with Glide directly
+ *   - NO FirebaseStorage SDK needed here — Glide handles any https:// URL natively
+ *
+ * WHY fitCenter (not centerCrop):
+ *   fitCenter shows the WHOLE book cover image without cutting any part off.
+ *   centerCrop fills the frame but crops the edges — you lose part of the cover art.
+ */
 public class ProductSliderAdapter extends RecyclerView.Adapter<ProductSliderAdapter.ProductSliderViewHolder> {
 
-    private final List<String> imagePaths;
+    private final List<String> imageUrls;
 
-    public ProductSliderAdapter(List<String> imagePaths) {
-        this.imagePaths = imagePaths;
+    public ProductSliderAdapter(List<String> imageUrls) {
+        // Guard against null — empty list means getItemCount() returns 0, no crash
+        this.imageUrls = (imageUrls != null) ? imageUrls : new ArrayList<>();
     }
 
     @NonNull
@@ -49,35 +50,27 @@ public class ProductSliderAdapter extends RecyclerView.Adapter<ProductSliderAdap
 
     @Override
     public void onBindViewHolder(@NonNull ProductSliderViewHolder holder, int position) {
-        String path = imagePaths.get(position);
+        String url = imageUrls.get(position);
 
-        if (path == null || path.isEmpty()) {
-            holder.imageView.setBackgroundColor(
-                    holder.imageView.getContext().getColor(R.color.md_theme_surfaceVariant));
+        if (url == null || url.isEmpty()) {
+            // No URL — show plain background, skip Glide
+            holder.imageView.setImageDrawable(null);
             return;
         }
 
-        // Show placeholder while loading
-        holder.imageView.setBackgroundColor(
-                holder.imageView.getContext().getColor(R.color.md_theme_surfaceVariant));
-
-        // Resolve Firebase Storage path → real https URL → Glide loads it
-        FirebaseStorage.getInstance()
-                .getReference(path)
-                .getDownloadUrl()
-                .addOnSuccessListener(uri ->
-                        Glide.with(holder.imageView.getContext())
-                                .load(uri)
-                                .centerCrop()
-                                .into(holder.imageView))
-                .addOnFailureListener(e -> {
-                    // No image uploaded for this product yet — placeholder stays
-                });
+        // fitCenter: scales image to fit entirely within the ImageView bounds.
+        // The full book cover is visible — nothing is cropped.
+        // DiskCacheStrategy.ALL: caches both original + transformed for fast reloads.
+        Glide.with(holder.imageView.getContext())
+                .load(url)
+                .fitCenter()
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(holder.imageView);
     }
 
     @Override
     public int getItemCount() {
-        return imagePaths != null ? imagePaths.size() : 0;
+        return imageUrls.size();
     }
 
     public static class ProductSliderViewHolder extends RecyclerView.ViewHolder {

@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.storage.FirebaseStorage;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -21,17 +21,33 @@ import java.util.Locale;
 import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.model.Order;
 
-// NEW — Adapter for the My Orders / My Rentals list
+/**
+ * OrdersAdapter
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Shows each rental order as a card in the My Rentals screen.
+ *
+ * WHY THE CRASH WAS HAPPENING:
+ *   The old version used FirebaseStorage.getReference(item.getProductImage())
+ *   which expects a STORAGE PATH like "product_images/abc/photo.jpg".
+ *   But since the admin panel was updated, productImage is now stored as a
+ *   full HTTPS download URL like "https://firebasestorage.googleapis.com/..."
+ *   Passing an https:// URL to storage.getReference() causes a crash because
+ *   it is not a valid storage path.
+ *
+ * THE FIX:
+ *   - Removed FirebaseStorage entirely — not needed.
+ *   - productImage is already a public download URL → load directly with Glide.
+ *   - Glide handles any https:// URL without the Storage SDK.
+ */
 public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.ViewHolder> {
 
     private final List<Order> orders;
-    private final FirebaseStorage storage;
     private static final SimpleDateFormat DATE_FMT =
             new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
 
     public OrdersAdapter(List<Order> orders) {
         this.orders = orders;
-        this.storage = FirebaseStorage.getInstance();
+        // REMOVED: FirebaseStorage.getInstance() — was the crash source
     }
 
     @NonNull
@@ -58,9 +74,11 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.ViewHolder
         }
 
         // Status chip colour
-        holder.orderStatus.setText(order.getStatus() != null ? order.getStatus() : "PLACED");
-        switch (order.getStatus() != null ? order.getStatus() : "") {
+        String status = order.getStatus() != null ? order.getStatus() : "PLACED";
+        holder.orderStatus.setText(status);
+        switch (status) {
             case "PAID":
+            case "CONFIRMED":
             case "PROCESSING":
                 holder.orderStatus.setBackgroundColor(Color.parseColor("#E8F5E9"));
                 holder.orderStatus.setTextColor(Color.parseColor("#2E7D32"));
@@ -89,8 +107,10 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.ViewHolder
 
         // Nested book list inside the order card
         if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
-            OrderBooksAdapter booksAdapter = new OrderBooksAdapter(order.getOrderItems(), storage);
-            holder.booksRecycler.setLayoutManager(new LinearLayoutManager(holder.itemView.getContext()));
+            // FIXED: no longer passing FirebaseStorage — images are loaded as URLs
+            OrderBooksAdapter booksAdapter = new OrderBooksAdapter(order.getOrderItems());
+            holder.booksRecycler.setLayoutManager(
+                    new LinearLayoutManager(holder.itemView.getContext()));
             holder.booksRecycler.setAdapter(booksAdapter);
         }
     }
@@ -106,25 +126,22 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.ViewHolder
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            orderId = itemView.findViewById(R.id.order_id);
-            orderDate = itemView.findViewById(R.id.order_date);
-            orderStatus = itemView.findViewById(R.id.order_status);
-            orderTotal = itemView.findViewById(R.id.order_total);
+            orderId         = itemView.findViewById(R.id.order_id);
+            orderDate       = itemView.findViewById(R.id.order_date);
+            orderStatus     = itemView.findViewById(R.id.order_status);
+            orderTotal      = itemView.findViewById(R.id.order_total);
             deliveryAddress = itemView.findViewById(R.id.order_delivery_address);
-            booksRecycler = itemView.findViewById(R.id.order_books_recycler);
+            booksRecycler   = itemView.findViewById(R.id.order_books_recycler);
         }
     }
 
-    // ── Nested adapter for books inside each order card ──────────────────────
-    // NEW — shows book thumbnail + title + copies × weeks + subtotal
+    // ── Nested adapter: books listed inside each order card ──────────────────
     static class OrderBooksAdapter extends RecyclerView.Adapter<OrderBooksAdapter.BVH> {
 
         private final List<Order.OrderItem> items;
-        private final FirebaseStorage storage;
 
-        OrderBooksAdapter(List<Order.OrderItem> items, FirebaseStorage storage) {
+        OrderBooksAdapter(List<Order.OrderItem> items) {
             this.items = items;
-            this.storage = storage;
         }
 
         @NonNull
@@ -139,24 +156,29 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.ViewHolder
         public void onBindViewHolder(@NonNull BVH holder, int position) {
             Order.OrderItem item = items.get(position);
 
-            holder.title.setText(item.getProductTitle() != null ? item.getProductTitle() : item.getProductId());
+            holder.title.setText(item.getProductTitle() != null
+                    ? item.getProductTitle() : item.getProductId());
 
-            int weeks = item.getRentalWeeks() > 0 ? item.getRentalWeeks() : 1;
-            int copies = item.getQuantity() > 0 ? item.getQuantity() : 1;
-            holder.meta.setText(copies + " cop" + (copies == 1 ? "y" : "ies") + " × " + weeks + " week" + (weeks == 1 ? "" : "s"));
+            int weeks  = item.getRentalWeeks() > 0 ? item.getRentalWeeks() : 1;
+            int copies = item.getQuantity()    > 0 ? item.getQuantity()    : 1;
+            holder.meta.setText(copies + " cop" + (copies == 1 ? "y" : "ies")
+                    + " × " + weeks + " week" + (weeks == 1 ? "" : "s"));
 
-            // NEW — Correct subtotal using saved rentalWeeks
             double subtotal = item.getUnitPrice() * weeks * copies;
             holder.subtotal.setText(String.format(Locale.US, "LKR %,.2f", subtotal));
 
-            // Load book thumbnail from Firebase Storage
-            if (item.getProductImage() != null && !item.getProductImage().isEmpty()) {
-                storage.getReference(item.getProductImage()).getDownloadUrl()
-                        .addOnSuccessListener(uri ->
-                                Glide.with(holder.itemView.getContext())
-                                        .load(uri)
-                                        .centerCrop()
-                                        .into(holder.image));
+            // FIXED: productImage is now a full https:// download URL
+            // Load directly with Glide — no FirebaseStorage.getReference() needed
+            String imageUrl = item.getProductImage();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                Glide.with(holder.itemView.getContext())
+                        .load(imageUrl)
+                        .fitCenter()
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .placeholder(android.R.color.darker_gray)
+                        .into(holder.image);
+            } else {
+                holder.image.setImageDrawable(null);
             }
         }
 
@@ -166,11 +188,12 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.ViewHolder
         static class BVH extends RecyclerView.ViewHolder {
             ImageView image;
             TextView title, meta, subtotal;
+
             BVH(@NonNull View v) {
                 super(v);
-                image = v.findViewById(R.id.order_book_image);
-                title = v.findViewById(R.id.order_book_title);
-                meta = v.findViewById(R.id.order_book_meta);
+                image    = v.findViewById(R.id.order_book_image);
+                title    = v.findViewById(R.id.order_book_title);
+                meta     = v.findViewById(R.id.order_book_meta);
                 subtotal = v.findViewById(R.id.order_book_subtotal);
             }
         }

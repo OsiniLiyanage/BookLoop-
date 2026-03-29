@@ -10,7 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.List;
 import java.util.Locale;
@@ -24,10 +23,26 @@ import lk.jiat.bookloop.helper.WishlistDatabase;
  * RecyclerView adapter for the wishlist list.
  * Data comes from local SQLite cache (WishlistDatabase).
  *
- * Each item has 3 actions:
- *   1. "View" button → opens ProductDetailsFragment (onRentClick)
- *   2. "Move to Cart" button → adds to cart, removes from wishlist (onMoveToCartClick)
- *   3. Trash icon → removes from wishlist only (onRemoveClick)
+ * BUG FIX — crash: "location should not be a full URL"
+ *   FirebaseStorage.getReference(url) only accepts a Storage path like
+ *   "images/cover.jpg", NOT a full https:// download URL. But when a book
+ *   is saved to the SQLite wishlist, the imageUrl stored is whatever came
+ *   from Firestore — which is a full https://firebasestorage.googleapis.com/...
+ *   download URL. Calling storage.getReference(fullUrl) throws:
+ *     IllegalArgumentException: location should not be a full URL
+ *   and crashes the whole app as soon as the RecyclerView tries to bind
+ *   any item that has an image.
+ *
+ *   Fix: removed FirebaseStorage entirely from this adapter. Since the
+ *   imageUrl is already a full download URL, just pass it straight to
+ *   Glide.with(...).load(url) — Glide handles https:// URLs natively,
+ *   no Storage reference needed.
+ *
+ * BUG FIX — stale adapter position crash:
+ *   getAdapterPosition() is deprecated and returns NO_ID (-1) when the
+ *   ViewHolder is mid-animation after removal. Passing -1 to remove()
+ *   causes IndexOutOfBoundsException. Fixed with getBindingAdapterPosition()
+ *   and a NO_ID guard.
  */
 public class WishlistAdapter extends RecyclerView.Adapter<WishlistAdapter.ViewHolder> {
 
@@ -39,12 +54,14 @@ public class WishlistAdapter extends RecyclerView.Adapter<WishlistAdapter.ViewHo
 
     private final List<WishlistDatabase.WishlistItem> items;
     private final OnWishlistActionListener listener;
-    private final FirebaseStorage storage;
 
-    public WishlistAdapter(List<WishlistDatabase.WishlistItem> items, OnWishlistActionListener listener) {
-        this.items = items;
+    // FIX: FirebaseStorage field removed — it caused the crash. Glide handles
+    // full https:// URLs directly so we don't need the Storage SDK here at all.
+
+    public WishlistAdapter(List<WishlistDatabase.WishlistItem> items,
+                           OnWishlistActionListener listener) {
+        this.items    = items;
         this.listener = listener;
-        this.storage = FirebaseStorage.getInstance();
     }
 
     @NonNull
@@ -59,41 +76,46 @@ public class WishlistAdapter extends RecyclerView.Adapter<WishlistAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         WishlistDatabase.WishlistItem item = items.get(position);
 
-        holder.title.setText(item.title);
+        holder.title.setText(item.title  != null ? item.title  : "");
         holder.author.setText(item.author != null ? item.author : "");
         holder.price.setText(String.format(Locale.US, "LKR %,.0f/week", item.price));
 
-        // Load cover image from Firebase Storage
+        // FIX: load image directly with Glide using the full URL.
+        // The old code called storage.getReference(item.imageUrl) which threw
+        // IllegalArgumentException when imageUrl was an https:// download URL.
         if (item.imageUrl != null && !item.imageUrl.isEmpty()) {
-            storage.getReference(item.imageUrl).getDownloadUrl()
-                    .addOnSuccessListener(uri ->
-                            Glide.with(holder.itemView.getContext())
-                                    .load(uri)
-                                    .centerCrop()
-                                    .into(holder.image));
+            Glide.with(holder.itemView.getContext())
+                    .load(item.imageUrl)   // imageUrl is already a full https:// URL
+                    .centerCrop()
+                    .placeholder(R.drawable.ic_launcher_foreground)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .into(holder.image);
         }
 
-        // "View" button — open product page
         holder.btnView.setOnClickListener(v -> {
             if (listener != null) listener.onRentClick(item);
         });
 
-        // "Move to Cart" button — add to cart then remove from wishlist
         holder.btnMoveToCart.setOnClickListener(v -> {
-            if (listener != null) listener.onMoveToCartClick(item, holder.getAdapterPosition());
+            if (listener == null) return;
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_ID) return;
+            listener.onMoveToCartClick(item, pos);
         });
 
-        // Trash icon — remove from wishlist only
         holder.btnRemove.setOnClickListener(v -> {
-            if (listener != null) listener.onRemoveClick(item, holder.getAdapterPosition());
+            if (listener == null) return;
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_ID) return;
+            listener.onRemoveClick(item, pos);
         });
     }
 
     @Override
     public int getItemCount() { return items.size(); }
 
-    // Remove item from list after deletion
     public void removeAt(int position) {
+        if (position < 0 || position >= items.size()) return;
         items.remove(position);
         notifyItemRemoved(position);
         notifyItemRangeChanged(position, items.size());
@@ -101,18 +123,19 @@ public class WishlistAdapter extends RecyclerView.Adapter<WishlistAdapter.ViewHo
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView image;
-        TextView title, author, price;
+        TextView  title, author, price;
         com.google.android.material.button.MaterialButton btnView, btnMoveToCart, btnRemove;
 
         ViewHolder(@NonNull View v) {
             super(v);
-            image       = v.findViewById(R.id.wishlist_book_image);
-            title       = v.findViewById(R.id.wishlist_book_title);
-            author      = v.findViewById(R.id.wishlist_book_author);
-            price       = v.findViewById(R.id.wishlist_book_price);
-            btnView     = v.findViewById(R.id.wishlist_btn_rent);
+            image         = v.findViewById(R.id.wishlist_book_image);
+            title         = v.findViewById(R.id.wishlist_book_title);
+            author        = v.findViewById(R.id.wishlist_book_author);
+            price         = v.findViewById(R.id.wishlist_book_price);
+            btnView       = v.findViewById(R.id.wishlist_btn_rent);
             btnMoveToCart = v.findViewById(R.id.wishlist_btn_move_to_cart);
-            btnRemove   = v.findViewById(R.id.wishlist_btn_remove);
+            btnRemove     = v.findViewById(R.id.wishlist_btn_remove);
         }
     }
+
 }

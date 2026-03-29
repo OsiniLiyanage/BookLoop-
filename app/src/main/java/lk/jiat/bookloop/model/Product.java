@@ -1,6 +1,6 @@
 package lk.jiat.bookloop.model;
 
-
+import com.google.firebase.Timestamp;
 
 import java.util.List;
 
@@ -27,6 +27,10 @@ public class Product {
     private String author;
     private List<Attribute> attributes;
 
+    // createdAt: saved as Firestore Timestamp when admin creates a book.
+    // Used by HomeFragment to sort New Arrivals — newest books first.
+    // Firestore Timestamp maps directly to/from this field via toObjects().
+    private Timestamp createdAt;
 
     @Data
     @Builder
@@ -37,6 +41,4 @@ public class Product {
         private String type;
         private List<String> values;
     }
-
-
 }

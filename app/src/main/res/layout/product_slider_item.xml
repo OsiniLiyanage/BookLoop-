@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    product_slider_item.xml
+    ────────────────────────
+    One page inside the ViewPager2 image slider on the Product Details screen.
+
+    WHY fitCenter instead of centerCrop:
+      centerCrop fills the whole area but CUTS OFF the sides/top/bottom of the image.
+      fitCenter shows the WHOLE image scaled down to fit, with background colour
+      on the empty space — you see the full book cover without any cropping.
+
+    WHY black background:
+      Book covers often have coloured edges. Black background looks like a cinema
+      lightbox effect and contrasts well with any cover colour.
+-->
 <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/product_slider_item_image"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent"
+    android:scaleType="fitCenter"
+    android:background="@color/md_theme_primary"/>

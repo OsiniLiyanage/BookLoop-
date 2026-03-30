@@ -47,43 +47,32 @@ import lk.jiat.bookloop.model.Product;
  * ───────────────────────────
  * Shows all details for a single book.
  *
- * FIXES IN THIS VERSION:
- *   1. "Rent Now" button now navigates to CheckoutFragment (previously did nothing)
- *   2. Wishlist toggle — adds/removes from local SQLite + syncs to Firestore
- *   3. Recently Viewed — saved to SQLite when this page opens
- *   4. Add to Cart — saves to Firestore users/{uid}/cart
+ * BUG FIX — Per-user wishlist:
+ *   Old code called wishlistDb.addToWishlist(productId, ...) without a userId.
+ *   This meant ALL users on the same device shared one SQLite wishlist — if
+ *   User A saved a book, User B would see it too when they logged in.
+ *
+ *   Fix: every WishlistDatabase call now gets the current Firebase Auth uid first
+ *   and passes it as the first argument. WishlistDatabase v2 filters by user_id
+ *   so each user's data is completely isolated.
  */
 public class ProductDetailsFragment extends Fragment {
 
     private FragmentProductDetailsBinding binding;
     private String productId;
 
-    // Rental duration in weeks
-    private int rentalWeeks = 1;
-
-    // Number of copies the user wants to rent
+    private int rentalWeeks  = 1;
     private int rentalCopies = 1;
-
-    // Max copies available from Firestore
     private int availableCopies;
-
-    // Price per week from Firestore
     private double pricePerWeek;
 
-    // Chip group map for attribute selections (Condition etc.)
     private Map<String, ChipGroup> attributeGroups = new HashMap<>();
 
-    // For loading related sections
     private String currentAuthor;
     private String currentCategoryId;
 
-    // SQLite wishlist database (local storage)
     private WishlistDatabase wishlistDb;
-
-    // Track current wishlist state so we can toggle
     private boolean isInWishlist = false;
-
-    // Store product info so we can save to wishlist without another Firestore call
     private Product currentProduct;
 
     @Override
@@ -105,13 +94,11 @@ public class ProductDetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Open SQLite wishlist database
         wishlistDb = new WishlistDatabase(requireContext());
 
-        // Hide bottom nav when on product details page
+        // Hide bottom nav while on this page
         getActivity().findViewById(R.id.bottom_navigation_view).setVisibility(View.GONE);
 
-        // Back press returns to previous fragment
         getActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
                 new OnBackPressedCallback(true) {
                     @Override
@@ -120,7 +107,6 @@ public class ProductDetailsFragment extends Fragment {
                     }
                 });
 
-        // Load product data from Firestore
         loadProductDetails();
 
         // ── Rental WEEKS stepper ──────────────────────────────────────────────
@@ -130,7 +116,6 @@ public class ProductDetailsFragment extends Fragment {
                 updateRentalUI();
             }
         });
-
         binding.productDetailsBtnPlus.setOnClickListener(v -> {
             rentalWeeks++;
             updateRentalUI();
@@ -143,7 +128,6 @@ public class ProductDetailsFragment extends Fragment {
                 updateRentalUI();
             }
         });
-
         binding.productDetailsBtnCopiesPlus.setOnClickListener(v -> {
             if (rentalCopies < availableCopies) {
                 rentalCopies++;
@@ -153,55 +137,37 @@ public class ProductDetailsFragment extends Fragment {
 
         // ── Add to Cart ────────────────────────────────────────────────────────
         binding.productDetailsBtnAddCart.setOnClickListener(v -> {
-            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
-            if (firebaseAuth.getCurrentUser() == null) {
-                startActivity(new Intent(getActivity(), SignInActivity.class));
-            } else {
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                List<CartItem.Attribute> attributes = getFinalSelections();
-                CartItem cartItem = new CartItem(productId, rentalCopies, rentalWeeks, attributes);
-                String uid = firebaseAuth.getCurrentUser().getUid();
-
-                db.collection("users").document(uid).collection("cart").document()
-                        .set(cartItem)
-                        .addOnSuccessListener(unused ->
-                                Toast.makeText(getContext(), "Added to cart!", Toast.LENGTH_SHORT).show());
-            }
-        });
-
-        // ── Rent Now → Navigate directly to Checkout ──────────────────────────
-        //
-        // FIX: Previously this button called getFinalSelections() and returned the
-        // list without doing anything with it — the user was stuck on the same page.
-        //
-        // HOW IT WORKS NOW:
-        //   1. Check user is logged in (redirect to SignIn if not)
-        //   2. Add the selected product to cart (so CheckoutFragment can read it)
-        //   3. Navigate immediately to CheckoutFragment
-        //
-        // WHY add to cart first?
-        //   CheckoutFragment reads from Firestore users/{uid}/cart to build
-        //   the order summary. By adding to cart before navigating, the checkout
-        //   screen will show this book in the summary automatically.
-        //
-        binding.productDetailsBtnBuyNow.setOnClickListener(v -> {
-            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
-            if (firebaseAuth.getCurrentUser() == null) {
-                // Not logged in — send to sign in first
+            FirebaseAuth auth = FirebaseAuth.getInstance();
+            if (auth.getCurrentUser() == null) {
                 startActivity(new Intent(getActivity(), SignInActivity.class));
                 return;
             }
-
-            // Add to cart so CheckoutFragment can read it
+            String uid = auth.getCurrentUser().getUid();
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             List<CartItem.Attribute> attributes = getFinalSelections();
             CartItem cartItem = new CartItem(productId, rentalCopies, rentalWeeks, attributes);
-            String uid = firebaseAuth.getCurrentUser().getUid();
+
+            db.collection("users").document(uid).collection("cart").document()
+                    .set(cartItem)
+                    .addOnSuccessListener(unused ->
+                            Toast.makeText(getContext(), "Added to cart!", Toast.LENGTH_SHORT).show());
+        });
+
+        // ── Rent Now ──────────────────────────────────────────────────────────
+        binding.productDetailsBtnBuyNow.setOnClickListener(v -> {
+            FirebaseAuth auth = FirebaseAuth.getInstance();
+            if (auth.getCurrentUser() == null) {
+                startActivity(new Intent(getActivity(), SignInActivity.class));
+                return;
+            }
+            String uid = auth.getCurrentUser().getUid();
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            List<CartItem.Attribute> attributes = getFinalSelections();
+            CartItem cartItem = new CartItem(productId, rentalCopies, rentalWeeks, attributes);
 
             db.collection("users").document(uid).collection("cart").document()
                     .set(cartItem)
                     .addOnSuccessListener(unused -> {
-                        // Cart saved — now navigate to checkout
                         getParentFragmentManager().beginTransaction()
                                 .replace(R.id.fragment_container, new CheckoutFragment())
                                 .addToBackStack(null)
@@ -213,12 +179,23 @@ public class ProductDetailsFragment extends Fragment {
         });
 
         // ── Wishlist Toggle ───────────────────────────────────────────────────
+        // FIX: get userId first, then pass it to every WishlistDatabase call.
+        // Old code didn't pass userId so all accounts shared one SQLite wishlist.
         binding.productDetailsBtnWishlist.setOnClickListener(v -> {
             if (currentProduct == null) return;
 
+            FirebaseAuth auth = FirebaseAuth.getInstance();
+            if (auth.getCurrentUser() == null) {
+                Toast.makeText(getContext(), "Please log in to save to wishlist", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            // Get the uid BEFORE going to the background thread
+            final String userId = auth.getCurrentUser().getUid();
+
             new Thread(() -> {
                 if (isInWishlist) {
-                    wishlistDb.removeFromWishlist(productId);
+                    // FIX: pass userId so only THIS user's record is removed
+                    wishlistDb.removeFromWishlist(userId, productId);
                     removeFromFirestoreWishlist(productId);
                     isInWishlist = false;
                 } else {
@@ -226,7 +203,9 @@ public class ProductDetailsFragment extends Fragment {
                             && !currentProduct.getImages().isEmpty())
                             ? currentProduct.getImages().get(0) : "";
 
+                    // FIX: pass userId so the row is tagged to THIS user
                     wishlistDb.addToWishlist(
+                            userId,
                             productId,
                             currentProduct.getTitle(),
                             currentProduct.getAuthor(),
@@ -237,13 +216,16 @@ public class ProductDetailsFragment extends Fragment {
                     addToFirestoreWishlist();
                     isInWishlist = true;
                 }
+
+                if (!isAdded()) return;
                 requireActivity().runOnUiThread(this::updateWishlistButton);
             }).start();
         });
     }
 
-    // ── Update wishlist button icon ───────────────────────────────────────────
+    // ── Update heart icon based on wishlist state ─────────────────────────────
     private void updateWishlistButton() {
+        if (binding == null) return;
         if (isInWishlist) {
             binding.productDetailsBtnWishlist.setIconResource(R.drawable.favorite_24px);
             binding.productDetailsBtnWishlist.setIconTint(
@@ -263,10 +245,10 @@ public class ProductDetailsFragment extends Fragment {
 
         Map<String, Object> data = new HashMap<>();
         data.put("productId", productId);
-        data.put("title", currentProduct.getTitle());
-        data.put("author", currentProduct.getAuthor());
-        data.put("price", currentProduct.getPrice());
-        data.put("addedAt", System.currentTimeMillis());
+        data.put("title",     currentProduct.getTitle());
+        data.put("author",    currentProduct.getAuthor());
+        data.put("price",     currentProduct.getPrice());
+        data.put("addedAt",   System.currentTimeMillis());
 
         FirebaseFirestore.getInstance()
                 .collection("users").document(uid)
@@ -287,12 +269,11 @@ public class ProductDetailsFragment extends Fragment {
                 .addOnFailureListener(e -> Log.e("WISHLIST", "Firestore delete failed: " + e.getMessage()));
     }
 
-    // ─── Update weeks/copies display and recalculate total ───────────────────
+    // ─── Update weeks/copies display and total ────────────────────────────────
     private void updateRentalUI() {
         binding.productDetailsQuantity.setText(String.valueOf(rentalWeeks));
         binding.productDetailsTotalDays.setText((rentalWeeks * 7) + " days");
         binding.productDetailsCopies.setText(String.valueOf(rentalCopies));
-
         double total = pricePerWeek * rentalWeeks * rentalCopies;
         binding.productDetailsTotalPrice.setText("LKR " + (int) total);
     }
@@ -309,14 +290,12 @@ public class ProductDetailsFragment extends Fragment {
                     public void onSuccess(QuerySnapshot qds) {
                         if (!qds.isEmpty()) {
                             Product product = qds.getDocuments().get(0).toObject(Product.class);
-                            currentProduct = product;
-
+                            currentProduct    = product;
                             currentAuthor     = product.getAuthor();
                             currentCategoryId = product.getCategoryId();
                             pricePerWeek      = product.getPrice();
                             availableCopies   = product.getStockCount();
 
-                            // Image slider — pass the list of https:// URLs directly
                             ProductSliderAdapter sliderAdapter =
                                     new ProductSliderAdapter(product.getImages());
                             binding.productImageSlider.setAdapter(sliderAdapter);
@@ -331,7 +310,6 @@ public class ProductDetailsFragment extends Fragment {
 
                             binding.productDetailsRating.setRating(product.getRating());
                             binding.productDetailsRatingText.setText(String.valueOf(product.getRating()));
-
                             binding.productDetailsPrice.setText("LKR " + (int) pricePerWeek + " / week");
                             binding.productDetailsStatusBadge.setText(
                                     product.isStatus() ? "Available" : "Unavailable");
@@ -343,28 +321,46 @@ public class ProductDetailsFragment extends Fragment {
 
                             updateRentalUI();
 
-                            if (product.getAttributes() != null) {
+                            // Render attribute chips (e.g. Condition: New / Good / Fair).
+                            // If the Firestore document has an "attributes" array, use it.
+                            // If the field is missing or empty (old documents), fall back to
+                            // a default "Condition" chip group so the section is never blank.
+                            if (product.getAttributes() != null && !product.getAttributes().isEmpty()) {
                                 product.getAttributes().forEach(attribute ->
                                         renderAttribute(attribute, binding.productDetailsAttributeContainer));
+                            } else {
+                                // Fallback: build a default Condition attribute
+                                Product.Attribute conditionAttr = new Product.Attribute();
+                                conditionAttr.setName("Condition");
+                                conditionAttr.setType("text");
+                                conditionAttr.setValues(java.util.Arrays.asList("New", "Good", "Fair"));
+                                renderAttribute(conditionAttr, binding.productDetailsAttributeContainer);
                             }
 
-                            // Save to Recently Viewed (SQLite)
-                            String imageForRecent = (product.getImages() != null
-                                    && !product.getImages().isEmpty())
-                                    ? product.getImages().get(0) : "";
-                            new Thread(() -> wishlistDb.saveRecentlyViewed(
-                                    productId,
-                                    product.getTitle(),
-                                    product.getAuthor(),
-                                    product.getPrice(),
-                                    imageForRecent
-                            )).start();
+                            // Save to Recently Viewed — FIX: pass userId
+                            FirebaseAuth auth = FirebaseAuth.getInstance();
+                            if (auth.getCurrentUser() != null) {
+                                final String userId = auth.getCurrentUser().getUid();
+                                String imageForRecent = (product.getImages() != null
+                                        && !product.getImages().isEmpty())
+                                        ? product.getImages().get(0) : "";
 
-                            // Check wishlist state
-                            new Thread(() -> {
-                                isInWishlist = wishlistDb.isInWishlist(productId);
-                                requireActivity().runOnUiThread(() -> updateWishlistButton());
-                            }).start();
+                                new Thread(() -> wishlistDb.saveRecentlyViewed(
+                                        userId,         // FIX: was missing before
+                                        productId,
+                                        product.getTitle(),
+                                        product.getAuthor(),
+                                        product.getPrice(),
+                                        imageForRecent
+                                )).start();
+
+                                // Check wishlist state for THIS user — FIX: pass userId
+                                new Thread(() -> {
+                                    isInWishlist = wishlistDb.isInWishlist(userId, productId);
+                                    if (!isAdded()) return;
+                                    requireActivity().runOnUiThread(() -> updateWishlistButton());
+                                }).start();
+                            }
 
                             loadSameCategorySection(currentCategoryId);
                             loadSameAuthorSection(currentAuthor);
@@ -382,7 +378,6 @@ public class ProductDetailsFragment extends Fragment {
                 .addOnSuccessListener(qds -> {
                     List<Product> products = qds.toObjects(Product.class);
                     products.removeIf(p -> productId.equals(p.getProductId()));
-
                     if (!products.isEmpty()) {
                         LinearLayoutManager lm = new LinearLayoutManager(
                                 getContext(), LinearLayoutManager.HORIZONTAL, false);
@@ -396,7 +391,7 @@ public class ProductDetailsFragment extends Fragment {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("FIRESTORE_INDEX", "Same-category query needs an index: " + e.getMessage());
+                    Log.e("FIRESTORE_INDEX", "Same-category query: " + e.getMessage());
                     binding.productDetailsSameCategorySection.getRoot().setVisibility(View.GONE);
                 });
     }
@@ -406,14 +401,12 @@ public class ProductDetailsFragment extends Fragment {
             binding.productDetailsSameAuthorSection.getRoot().setVisibility(View.GONE);
             return;
         }
-
         FirebaseFirestore.getInstance().collection("products")
                 .whereEqualTo("author", author)
                 .get()
                 .addOnSuccessListener(qds -> {
                     List<Product> products = qds.toObjects(Product.class);
                     products.removeIf(p -> productId.equals(p.getProductId()));
-
                     if (!products.isEmpty()) {
                         LinearLayoutManager lm = new LinearLayoutManager(
                                 getContext(), LinearLayoutManager.HORIZONTAL, false);
@@ -442,7 +435,6 @@ public class ProductDetailsFragment extends Fragment {
                 .addOnSuccessListener(qds -> {
                     List<Product> products = qds.toObjects(Product.class);
                     products.removeIf(p -> productId.equals(p.getProductId()));
-
                     if (!products.isEmpty()) {
                         LinearLayoutManager lm = new LinearLayoutManager(
                                 getContext(), LinearLayoutManager.HORIZONTAL, false);
@@ -478,7 +470,8 @@ public class ProductDetailsFragment extends Fragment {
         row.setPadding(0, 8, 0, 8);
 
         TextView label = new TextView(getContext());
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(220, ViewGroup.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams lp =
+                new LinearLayout.LayoutParams(220, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.CENTER_VERTICAL;
         label.setLayoutParams(lp);
         label.setText(attribute.getName());

@@ -13,22 +13,22 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// NEW — OpenLibraryHelper: makes HTTP GET requests to Open Library API to auto-fetch
-//       book metadata (title, author, cover) from an ISBN.
-//       This satisfies the "HTTP Network Connection" assignment requirement.
-//       Usage: OpenLibraryHelper.fetchBookByIsbn("9780007477548", callback)
+// OpenLibraryHelper: makes HTTP GET requests to Open Library API to auto-fetch
+// book metadata (title, author, cover) from an ISBN.
+// This satisfies the "HTTP Network Connection" assignment requirement.
+// Usage: OpenLibraryHelper.fetchBookByIsbn("9780007477548", callback)
 public class OpenLibraryHelper {
 
     private static final String TAG = "OpenLibraryHelper";
     private static final String BASE_URL = "https://openlibrary.org/api/books";
 
-    // NEW — Callback for async HTTP result
+    // Callback for async HTTP result
     public interface BookFetchCallback {
         void onSuccess(BookMetadata metadata);
         void onError(String error);
     }
 
-    // NEW — Simple metadata model for API response
+    // Simple metadata model for API response
     public static class BookMetadata {
         public String title;
         public String author;
@@ -36,19 +36,20 @@ public class OpenLibraryHelper {
         public String publishYear;
         public String isbn;
 
+        // FIXED: Now properly handles invalid cover IDs
         public String getCoverUrl() {
-            if (coverId != null && !coverId.isEmpty()) {
-                return "https://covers.openlibrary.org/b/id/" + coverId + "-M.jpg";
+            if (coverId != null && !coverId.isEmpty() && !coverId.equals("0") && !coverId.equals("-1")) {
+                return "https://covers.openlibrary.org/b/id/" + coverId + "-L.jpg";
             }
             return null;
         }
     }
 
-    // NEW — Thread pool for background HTTP work (keeps UI thread free)
+    // Thread pool for background HTTP work (keeps UI thread free)
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    // NEW — Fetch book metadata by ISBN from Open Library (free API, no key needed)
+    // Fetch book metadata by ISBN from Open Library (free API, no key needed)
     public static void fetchBookByIsbn(String isbn, BookFetchCallback callback) {
         executor.execute(() -> {
             try {
@@ -78,10 +79,13 @@ public class OpenLibraryHelper {
                     reader.close();
                     connection.disconnect();
 
-                    // Parse JSON response
-                    BookMetadata metadata = parseResponse(sb.toString(), isbn);
+                    String jsonResponse = sb.toString();
+                    Log.d(TAG, "API Response: " + jsonResponse);
 
-                    // NEW — Deliver result on main thread so callers can update UI directly
+                    // Parse JSON response
+                    BookMetadata metadata = parseResponse(jsonResponse, isbn);
+
+                    // Deliver result on main thread so callers can update UI directly
                     mainHandler.post(() -> {
                         if (metadata != null) {
                             callback.onSuccess(metadata);
@@ -102,7 +106,7 @@ public class OpenLibraryHelper {
         });
     }
 
-    // NEW — Parse Open Library JSON response into BookMetadata
+    // Parse Open Library JSON response into BookMetadata
     private static BookMetadata parseResponse(String json, String isbn) {
         try {
             JSONObject root = new JSONObject(json);
@@ -127,9 +131,25 @@ public class OpenLibraryHelper {
                 }
             }
 
-            // Cover ID
+            // FIXED: Cover ID handling
+            // The API returns {"cover": {"small": -1, "medium": -1, "large": 123456}}
+            // We need to check all three sizes and use the first valid one
             if (bookData.has("cover")) {
-                metadata.coverId = String.valueOf(bookData.getJSONObject("cover").optInt("medium", 0));
+                JSONObject coverObj = bookData.getJSONObject("cover");
+
+                // Try large first, then medium, then small
+                int coverId = coverObj.optInt("large", -1);
+                if (coverId <= 0) coverId = coverObj.optInt("medium", -1);
+                if (coverId <= 0) coverId = coverObj.optInt("small", -1);
+
+                // Only set if we found a valid cover ID
+                if (coverId > 0) {
+                    metadata.coverId = String.valueOf(coverId);
+                    Log.d(TAG, "Found cover ID: " + metadata.coverId);
+                } else {
+                    metadata.coverId = null;
+                    Log.d(TAG, "No valid cover found");
+                }
             }
 
             // Publish year
@@ -137,11 +157,13 @@ public class OpenLibraryHelper {
                 metadata.publishYear = bookData.getString("publish_date");
             }
 
-            Log.i(TAG, "Parsed book: " + metadata.title + " by " + metadata.author);
+            Log.i(TAG, "Parsed book: " + metadata.title + " by " + metadata.author +
+                    " | Cover: " + (metadata.coverId != null ? metadata.getCoverUrl() : "none"));
             return metadata;
 
         } catch (Exception e) {
             Log.e(TAG, "JSON parse error: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

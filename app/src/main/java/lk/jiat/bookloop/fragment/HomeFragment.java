@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -322,8 +323,22 @@ public class HomeFragment extends Fragment implements SensorEventListener {
     }
 
     private void loadRecentlyViewedSection() {
+        // FIX: get userId so we only show THIS user's recently viewed books.
+        // Old code called getRecentlyViewed(10) without a userId which meant
+        // everyone on the same device saw the same recently viewed list.
+        com.google.firebase.auth.FirebaseUser firebaseUser =
+                FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser == null) {
+            // Not logged in — hide the section
+            if (binding != null)
+                binding.homeRecentlyViewedSection.getRoot().setVisibility(View.GONE);
+            return;
+        }
+        final String userId = firebaseUser.getUid();
+
         new Thread(() -> {
-            List<WishlistDatabase.WishlistItem> recentItems = wishlistDb.getRecentlyViewed(10);
+            // FIX: pass userId — loads only this user's recently viewed items
+            List<WishlistDatabase.WishlistItem> recentItems = wishlistDb.getRecentlyViewed(userId, 10);
             if (getActivity() == null) return;
             getActivity().runOnUiThread(() -> {
                 if (binding == null) return;

@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -31,28 +32,16 @@ import lk.jiat.bookloop.model.Product;
  * ─────────────────────
  * Shows saved books from local SQLite cache (WishlistDatabase).
  *
- * HOW WISHLIST WORKS:
- *   1. User opens a product → taps heart button → saved to SQLite + Firestore
- *   2. User opens Wishlist (side nav) → reads from SQLite (fast, offline)
- *   3. User can:
- *      a. Tap "View" → opens ProductDetailsFragment
- *      b. Tap "Move to Cart" → adds directly to Firestore cart, removes from wishlist
- *      c. Tap trash icon → removes from wishlist
+ * BUG FIX — Per-user wishlist isolation:
+ *   Old code called getAllWishlistItems() / removeFromWishlist() / addToWishlist()
+ *   without a userId. Since SQLite is per-device (not per-account), this meant
+ *   every logged-in user on the same phone saw the same 4 books in their wishlist.
  *
- * WHY SQLite here:
- *   SQLite is great for: offline access, fast local queries, structured data.
- *   Wishlist is exactly this — it works even without internet.
- *   The SQLite → WishlistDatabase pattern covers the "Data Storage: SQLite" topic.
+ *   Fix: get the current Firebase Auth uid at the start of every method that
+ *   touches the database, and pass it through. WishlistDatabase v2 stores a
+ *   user_id column and filters by it, so each user's data is completely separate.
  *
- * BUG FIXES (crash when opening Wishlist):
- *   1. isAdded() guard on every runOnUiThread callback — fragment may have been
- *      popped from the back stack while the background thread was still running,
- *      causing requireActivity() / binding access to throw IllegalStateException.
- *   2. wishlistItems null-check before clearAllWishlist() iterates — if loadWishlist()
- *      thread hasn't finished yet and user taps Clear, this was an NPE.
- *   3. Adapter position safety — getBindingAdapterPosition() instead of the
- *      deprecated getAdapterPosition(), and a NO_ID guard so stale clicks after
- *      an item is already removed don't crash with IndexOutOfBoundsException.
+ *   If no user is logged in, we show an empty wishlist instead of crashing.
  */
 public class WishlistFragment extends Fragment {
 
@@ -60,9 +49,6 @@ public class WishlistFragment extends Fragment {
     private FragmentWishlistBinding binding;
     private WishlistDatabase wishlistDb;
     private WishlistAdapter adapter;
-
-    // FIX: initialise to empty list so clearAllWishlist() never hits a NullPointerException
-    // if the user taps "Clear All" before the background DB thread finishes.
     private List<WishlistDatabase.WishlistItem> wishlistItems = new ArrayList<>();
 
     @Override
@@ -88,34 +74,41 @@ public class WishlistFragment extends Fragment {
         loadWishlist();
     }
 
-    // ── Load wishlist from SQLite (offline-first) ─────────────────────────────
+    // ── Get current userId safely — returns null if not logged in ─────────────
+    private String getCurrentUserId() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        return user != null ? user.getUid() : null;
+    }
+
+    // ── Load THIS user's wishlist from SQLite ─────────────────────────────────
     private void loadWishlist() {
+        final String userId = getCurrentUserId();
+
+        // If nobody is logged in, show empty rather than crashing
+        if (userId == null) {
+            showEmpty();
+            return;
+        }
+
         new Thread(() -> {
-            List<WishlistDatabase.WishlistItem> loaded = wishlistDb.getAllWishlistItems();
+            // FIX: pass userId so we only load THIS user's saved books
+            List<WishlistDatabase.WishlistItem> loaded = wishlistDb.getAllWishlistItems(userId);
 
-            // FIX: isAdded() ensures the fragment is still attached to its Activity.
-            // Without this, requireActivity() throws IllegalStateException when the
-            // user navigates away while the DB read is still in progress.
             if (!isAdded()) return;
-
             requireActivity().runOnUiThread(() -> {
-                // Double-check inside the UI callback too — Activity can finish
-                // in the gap between the isAdded() call above and this runOnUiThread.
                 if (!isAdded() || binding == null) return;
-
                 wishlistItems = loaded;
-
                 if (wishlistItems.isEmpty()) {
                     showEmpty();
-                    syncFromFirestore();
+                    syncFromFirestore(userId);
                 } else {
-                    showList();
+                    showList(userId);
                 }
             });
         }).start();
     }
 
-    private void showList() {
+    private void showList(final String userId) {
         binding.wishlistEmptyState.setVisibility(View.GONE);
         binding.wishlistRecycler.setVisibility(View.VISIBLE);
         binding.wishlistBtnClear.setVisibility(View.VISIBLE);
@@ -138,23 +131,21 @@ public class WishlistFragment extends Fragment {
 
             @Override
             public void onMoveToCartClick(WishlistDatabase.WishlistItem item, int position) {
-                // FIX: re-read safe position from adapter at click time
                 if (adapter == null) return;
-                moveToCart(item, position);
+                moveToCart(userId, item, position);
             }
 
             @Override
             public void onRemoveClick(WishlistDatabase.WishlistItem item, int position) {
-                // FIX: guard against stale position (item already removed by another action)
                 if (position < 0 || position >= wishlistItems.size()) return;
 
                 new Thread(() -> {
-                    wishlistDb.removeFromWishlist(item.productId);
+                    // FIX: pass userId — only removes from THIS user's wishlist
+                    wishlistDb.removeFromWishlist(userId, item.productId);
 
                     if (!isAdded()) return;
                     requireActivity().runOnUiThread(() -> {
                         if (!isAdded() || binding == null || adapter == null) return;
-                        // FIX: re-validate position inside UI thread before removing
                         if (position >= 0 && position < wishlistItems.size()) {
                             adapter.removeAt(position);
                             updateCountLabel();
@@ -173,33 +164,30 @@ public class WishlistFragment extends Fragment {
     }
 
     // ── Move to Cart ──────────────────────────────────────────────────────────
-    private void moveToCart(WishlistDatabase.WishlistItem item, int position) {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() == null) {
+    private void moveToCart(final String userId, WishlistDatabase.WishlistItem item, int position) {
+        if (userId == null) {
             Toast.makeText(getContext(), "Please log in to add to cart", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String uid = auth.getCurrentUser().getUid();
-
         Map<String, Object> cartData = new HashMap<>();
-        cartData.put("productId", item.productId);
-        cartData.put("quantity", 1);
+        cartData.put("productId",   item.productId);
+        cartData.put("quantity",    1);
         cartData.put("rentalWeeks", 1);
-        cartData.put("attributes", new ArrayList<>());
+        cartData.put("attributes",  new ArrayList<>());
 
         FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
+                .collection("users").document(userId)
                 .collection("cart").document()
                 .set(cartData)
                 .addOnSuccessListener(unused -> {
                     new Thread(() -> {
-                        wishlistDb.removeFromWishlist(item.productId);
+                        // FIX: pass userId — only removes from THIS user's wishlist
+                        wishlistDb.removeFromWishlist(userId, item.productId);
 
                         if (!isAdded()) return;
                         requireActivity().runOnUiThread(() -> {
                             if (!isAdded() || binding == null || adapter == null) return;
-                            // FIX: validate position is still valid before removing
                             if (position >= 0 && position < wishlistItems.size()) {
                                 adapter.removeAt(position);
                                 updateCountLabel();
@@ -225,8 +213,6 @@ public class WishlistFragment extends Fragment {
         binding.wishlistCountLabel.setText("0 saved books");
     }
 
-    // FIX: extracted count update to one place — avoids stale .size() reads scattered
-    // around the class after items have been removed from wishlistItems.
     private void updateCountLabel() {
         if (binding == null) return;
         int count = wishlistItems.size();
@@ -234,14 +220,14 @@ public class WishlistFragment extends Fragment {
     }
 
     private void clearAllWishlist() {
-        // FIX: null + empty guard — wishlistItems starts as empty ArrayList now,
-        // so this is safe even if called before loadWishlist() thread finishes.
         if (wishlistItems == null || wishlistItems.isEmpty()) return;
+        final String userId = getCurrentUserId();
+        if (userId == null) return;
 
         new Thread(() -> {
-            // Copy to avoid ConcurrentModificationException while iterating
             for (WishlistDatabase.WishlistItem item : new ArrayList<>(wishlistItems)) {
-                wishlistDb.removeFromWishlist(item.productId);
+                // FIX: pass userId — only clears THIS user's items
+                wishlistDb.removeFromWishlist(userId, item.productId);
                 removeFromFirestoreWishlist(item.productId);
             }
 
@@ -257,24 +243,22 @@ public class WishlistFragment extends Fragment {
     }
 
     private void removeFromFirestoreWishlist(String productId) {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() == null) return;
-        String uid = auth.getCurrentUser().getUid();
+        final String userId = getCurrentUserId();
+        if (userId == null) return;
 
         FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
+                .collection("users").document(userId)
                 .collection("wishlist").document(productId)
                 .delete()
                 .addOnFailureListener(e -> Log.e(TAG, "Firestore wishlist remove failed: " + e.getMessage()));
     }
 
-    private void syncFromFirestore() {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() == null) return;
-        String uid = auth.getCurrentUser().getUid();
+    // ── Sync from Firestore if SQLite is empty (after reinstall etc.) ──────────
+    private void syncFromFirestore(final String userId) {
+        if (userId == null) return;
 
         FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
+                .collection("users").document(userId)
                 .collection("wishlist")
                 .get()
                 .addOnSuccessListener(qds -> {
@@ -286,18 +270,20 @@ public class WishlistFragment extends Fragment {
                             if (p != null) {
                                 String img = (p.getImages() != null && !p.getImages().isEmpty())
                                         ? p.getImages().get(0) : "";
-                                wishlistDb.addToWishlist(p.getProductId(), p.getTitle(),
+                                // FIX: pass userId so synced items are tagged to THIS user
+                                wishlistDb.addToWishlist(userId, p.getProductId(), p.getTitle(),
                                         p.getAuthor(), p.getPrice(), img, p.getCategoryId());
                             }
                         }
 
-                        List<WishlistDatabase.WishlistItem> synced = wishlistDb.getAllWishlistItems();
+                        List<WishlistDatabase.WishlistItem> synced =
+                                wishlistDb.getAllWishlistItems(userId);
 
                         if (!isAdded()) return;
                         requireActivity().runOnUiThread(() -> {
                             if (!isAdded() || binding == null) return;
                             wishlistItems = synced;
-                            if (!wishlistItems.isEmpty()) showList();
+                            if (!wishlistItems.isEmpty()) showList(userId);
                         });
                     }).start();
                 })
@@ -307,8 +293,6 @@ public class WishlistFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // FIX: clear binding reference so background threads that check
-        // "binding == null" correctly bail out instead of crashing.
         binding = null;
     }
 }

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     fragment_help.xml
-    Help & Support page for BookLoop.
-    Contains: FAQs section, contact options (email, phone), and a feedback note.
+    Help & Support page + ISBN Book Lookup tool (demonstrates OpenLibraryHelper HTTP).
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -34,7 +33,7 @@
             android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="14sp" />
 
-        <!-- ── Contact Us card ─────────────────────────────────────────── -->
+        <!-- ── Contact Us ──────────────────────────────────────────────────── -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -57,7 +56,6 @@
                     android:textSize="17sp"
                     android:textStyle="bold" />
 
-                <!-- Call button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/help_btn_call"
                     android:layout_width="match_parent"
@@ -65,7 +63,7 @@
                     android:layout_marginTop="12dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text="Call Support: +94 77 123 4567"
+                    android:text="Call Support"
                     android:textSize="14sp"
                     app:backgroundTint="@color/md_theme_primary"
                     app:cornerRadius="12dp"
@@ -73,7 +71,6 @@
                     app:iconGravity="textStart"
                     app:iconPadding="8dp" />
 
-                <!-- Email button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/help_btn_email"
                     style="@style/Widget.Material3.Button.OutlinedButton"
@@ -82,15 +79,14 @@
                     android:layout_marginTop="8dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text="Email: support@bookloop.lk"
+                    android:text="Email Us"
                     android:textSize="14sp"
                     app:cornerRadius="12dp" />
 
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ── FAQ Section ─────────────────────────────────────────────── -->
+        <!-- ── FAQ ───────────────────────────────────────────────────────────── -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -100,7 +96,6 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <!-- FAQ 1 -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -108,34 +103,18 @@
             app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
             app:cardCornerRadius="12dp"
             app:cardElevation="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="14dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:text="How does BookLoop renting work?"
-                    android:textColor="@color/md_theme_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:textColor="@color/md_theme_primary" android:textSize="14sp" android:textStyle="bold"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Browse books, select the number of weeks you want to rent, and add to cart. After checkout, we deliver the book to your address. Return it by the due date to avoid late fees."
-                    android:textColor="@color/md_theme_onSurfaceVariant"
-                    android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.4" />
-
+                    android:textColor="@color/md_theme_onSurfaceVariant" android:textSize="13sp" android:lineSpacingMultiplier="1.4"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- FAQ 2 -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -143,34 +122,18 @@
             app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
             app:cardCornerRadius="12dp"
             app:cardElevation="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="14dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:text="How do I add a book to my Wishlist?"
-                    android:textColor="@color/md_theme_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:textColor="@color/md_theme_primary" android:textSize="14sp" android:textStyle="bold"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Open any book's detail page and tap the heart (♡) icon. The book is saved to your Wishlist instantly — even without internet, because it's stored on your device. Open the Wishlist from the side menu to see your saved books."
-                    android:textColor="@color/md_theme_onSurfaceVariant"
-                    android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.4" />
-
+                    android:text="Open any book's detail page and tap the heart icon. The book is saved to your Wishlist instantly — even without internet, because it's stored on your device."
+                    android:textColor="@color/md_theme_onSurfaceVariant" android:textSize="13sp" android:lineSpacingMultiplier="1.4"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- FAQ 3 -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -178,107 +141,183 @@
             app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
             app:cardCornerRadius="12dp"
             app:cardElevation="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Can I move a wishlist book to my cart?"
-                    android:textColor="@color/md_theme_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Yes! In your Wishlist, each book has an &quot;Add to Cart&quot; button. Tapping it adds the book to your rental cart and removes it from your wishlist automatically."
-                    android:textColor="@color/md_theme_onSurfaceVariant"
-                    android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.4" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- FAQ 4 -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:padding="14dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:text="How do I track my orders?"
-                    android:textColor="@color/md_theme_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:textColor="@color/md_theme_primary" android:textSize="14sp" android:textStyle="bold"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="Tap the 'Orders' tab in the bottom navigation bar. You can see all your active and past rentals, their status, and due dates."
-                    android:textColor="@color/md_theme_onSurfaceVariant"
-                    android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.4" />
-
+                    android:textColor="@color/md_theme_onSurfaceVariant" android:textSize="13sp" android:lineSpacingMultiplier="1.4"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- FAQ 5 -->
+        <!-- ── ISBN Book Lookup ───────────────────────────────────────────────
+             This section demonstrates the OpenLibraryHelper HTTP connection.
+             User types an ISBN → app makes a live HTTP GET to Open Library API
+             → shows book title, author, cover from the internet.
+             This is the "Network Connection (HTTP)" assignment requirement in action.
+        ──────────────────────────────────────────────────────────────────── -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/md_theme_outlineVariant" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="📖 Book ISBN Lookup"
+            android:textColor="@color/md_theme_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:lineSpacingMultiplier="1.4"
+            android:text="Enter a book ISBN to fetch its title, author, and cover image live from the Open Library API. Try: 9780553573404 (A Game of Thrones)"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="13sp" />
+
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardBackgroundColor="@color/md_theme_surfaceContainerLow"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="3dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="14dp">
+                android:padding="16dp">
 
-                <TextView
+                <!-- ISBN input row -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Why did I receive a reminder notification?"
-                    android:textColor="@color/md_theme_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <TextView
+                    <EditText
+                        android:id="@+id/help_isbn_input"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/custom_input_search"
+                        android:hint="Enter ISBN-13 e.g. 9780007477548"
+                        android:inputType="number"
+                        android:maxLength="13"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textColor="@color/md_theme_onSurface"
+                        android:textColorHint="@color/md_theme_outline"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/help_isbn_lookup_btn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="Look Up"
+                        android:textSize="13sp"
+                        app:backgroundTint="@color/md_theme_primary"
+                        app:cornerRadius="12dp" />
+
+                </LinearLayout>
+
+                <!-- Loading spinner -->
+                <ProgressBar
+                    android:id="@+id/help_isbn_loading"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="12dp"
+                    android:indeterminateTint="@color/md_theme_primary"
+                    android:visibility="gone" />
+
+                <!-- Result card — shown after successful lookup -->
+                <LinearLayout
+                    android:id="@+id/help_isbn_result_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="BookLoop sends you automatic reminders when a book you've rented is due back soon. These notifications work even when the app is closed, using Android's background task system."
-                    android:textColor="@color/md_theme_onSurfaceVariant"
-                    android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.4" />
+                    android:layout_marginTop="14dp"
+                    android:background="@color/md_theme_surfaceContainerLow"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp"
+                    android:visibility="gone">
+
+                    <!-- Book cover thumbnail -->
+                    <ImageView
+                        android:id="@+id/help_isbn_result_cover"
+                        android:layout_width="55dp"
+                        android:layout_height="75dp"
+                        android:contentDescription="Book cover"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/library_books_24px" />
+
+                    <!-- Book details -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/help_isbn_result_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Title"
+                            android:textColor="@color/md_theme_onSurface"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/help_isbn_result_author"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Author"
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/help_isbn_result_year"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text=""
+                            android:textColor="@color/md_theme_onSurfaceVariant"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/help_isbn_result_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text=""
+                            android:textColor="@color/md_theme_primary"
+                            android:textSize="11sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Bottom spacing -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="20dp" />
+        <View android:layout_width="match_parent" android:layout_height="20dp" />
 
     </LinearLayout>
 

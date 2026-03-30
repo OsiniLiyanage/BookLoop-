@@ -1,49 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_splash.xml
+    Full-screen splash with a Lottie book animation at the top and
+    the app name/tagline/version at the bottom.
+
+    REQUIRES: com.airbnb.android:lottie:6.1.0 in build.gradle
+    ANIMATION FILE: res/raw/splash_animation.json
+      → Download any "book reading" or "open book" JSON from lottiefiles.com
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/md_theme_primaryContainer"
-    tools:context=".activity.SplashActivity">
+    android:background="@color/md_theme_primaryContainer">
 
-    <!-- App Icon -->
-    <ImageView
-        android:id="@+id/splashLogo"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
+    <!-- Lottie animation — centred vertically with a slight upward offset -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/splash_lottie"
+        android:layout_width="400dp"
+        android:layout_height="400dp"
         android:layout_gravity="center"
-        android:layout_marginBottom="80dp" />
+        android:layout_marginBottom="40dp"
+        app:lottie_rawRes="@raw/splash_animation"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false" />
 
-    <!-- App Name -->
+    <!-- App name below the animation -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="70dp"
+        android:fontFamily="serif"
         android:text="BookLoop"
-        android:textColor="@color/md_theme_onPrimaryContainer"
-        android:textSize="38sp"
-        android:textStyle="bold"
-        android:fontFamily="serif" />
+        android:textColor="@color/md_theme_primary"
+        android:textSize="50sp"
+        android:textStyle="bold" />
 
-    <!-- Slogan -->
+    <!-- Tagline -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginTop="155dp"
+        android:layout_marginTop="150dp"
+        android:letterSpacing="0.05"
         android:text="@string/app_tagline"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="13sp"
-        android:letterSpacing="0.05" />
+        android:textColor="@color/md_theme_onSurfaceVariant"
+        android:textSize="20sp" />
 
-    <!-- Version -->
+    <!-- Version at bottom -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="65dp"
+        android:layout_marginBottom="60dp"
         android:text="V 1.0.0"
         android:textColor="@color/md_theme_onSurfaceVariant"
         android:textSize="11sp" />
@@ -53,19 +63,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="48dp"
+        android:layout_marginBottom="44dp"
         android:text="@string/app_copy"
         android:textColor="@color/md_theme_onSurfaceVariant"
         android:textSize="11sp" />
-
-    <!-- Progress Bar -->
-    <ProgressBar
-        android:id="@+id/splashProgressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="120dp"
-        android:indeterminateTint="@color/md_theme_primary"
-        android:visibility="invisible" />
 
 </FrameLayout>

@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- NEW — Settings screen: covers SharedPreferences requirement (saves all prefs locally) -->
+<!--
+    fragment_settings.xml — Fully updated Settings screen.
+
+    SECTIONS:
+    1. Notifications   → SwitchMaterial (SharedPreferences: boolean)
+    2. Appearance      → Dark/Light/System theme toggle (SharedPreferences: String)
+    3. Delivery Info   → Shows last saved delivery details (SharedPreferences read)
+    4. Account         → Change Password (Firebase Auth)
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -7,27 +15,23 @@
     android:background="@color/md_theme_background"
     android:orientation="vertical">
 
-    <!-- Header -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/md_theme_surfaceContainerLowest"
-        android:elevation="2dp"
-        android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Settings"
-            android:textColor="@color/md_theme_primary"
-            android:textSize="22sp"
-            android:textStyle="bold" />
 
-    </LinearLayout>
+    <!-- Lottie animation banner below the header -->
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/settings_lottie"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        app:lottie_rawRes="@raw/setting"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        android:scaleType="centerCrop"
+        android:layout_marginTop="20dp"/>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        >
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -35,40 +39,56 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Section: Notifications -->
-            <TextView
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- SECTION 1: NOTIFICATIONS                                   -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:id="@+id/settings_section_notifications"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="NOTIFICATIONS"
-                android:textColor="@color/md_theme_primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:layout_marginBottom="8dp"
+                    android:text="NOTIFICATIONS"
+                    android:textColor="@color/md_theme_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
 
-                    <!-- Enable notifications toggle -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:padding="18dp">
+
+                        <LinearLayout
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@color/md_theme_primaryContainer"
+                            android:gravity="center">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:src="@drawable/notifications_24px"
+                                app:tint="@color/md_theme_primary" />
+                        </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -77,12 +97,14 @@
                                 android:layout_height="wrap_content"
                                 android:text="Push Notifications"
                                 android:textColor="@color/md_theme_onSurface"
-                                android:textSize="15sp" />
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Order updates, return reminders"
+                                android:layout_marginTop="2dp"
+                                android:text="Order updates &amp; return reminders"
                                 android:textColor="@color/md_theme_onSurfaceVariant"
                                 android:textSize="12sp" />
 
@@ -96,177 +118,409 @@
 
                     </LinearLayout>
 
-                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
-            <!-- Section: Appearance -->
-            <TextView
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- SECTION 2: APPEARANCE — Theme Toggle                       -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:id="@+id/settings_section_appearance"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="APPEARANCE"
-                android:textColor="@color/md_theme_primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:layout_marginBottom="8dp"
+                    android:text="APPEARANCE"
+                    android:textColor="@color/md_theme_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
 
-                    <!-- Font size -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:orientation="vertical"
+                        android:padding="18dp">
 
-                        <TextView
-                            android:layout_width="0dp"
+                        <!-- Theme label row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Text Size"
-                            android:textColor="@color/md_theme_onSurface"
-                            android:textSize="15sp" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="14dp">
 
-                        <!-- Font size selector -->
+                            <LinearLayout
+                                android:layout_width="42dp"
+                                android:layout_height="42dp"
+                                android:background="@color/md_theme_primaryContainer"
+                                android:gravity="center">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/palette_24px"
+                                    app:tint="@color/md_theme_primary" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="App Theme"
+                                    android:textColor="@color/md_theme_onSurface"
+                                    android:textSize="15sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/settings_theme_label"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="System default"
+                                    android:textColor="@color/md_theme_onSurfaceVariant"
+                                    android:textSize="12sp" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- Three theme buttons: Light / System / Dark -->
                         <RadioGroup
-                            android:id="@+id/settings_font_size_group"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/settings_theme_group"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:orientation="horizontal"
+                            android:gravity="center">
 
                             <RadioButton
-                                android:id="@+id/settings_font_small"
-                                android:layout_width="wrap_content"
+                                android:id="@+id/settings_theme_light"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:text="S"
-                                android:textSize="13sp" />
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="☀ Light"
+                                android:textSize="13sp"
+                                android:button="@null"
+                                android:background="@drawable/theme_radio_bg"
+                                android:padding="10dp" />
+
+                            <View
+                                android:layout_width="8dp"
+                                android:layout_height="1dp" />
 
                             <RadioButton
-                                android:id="@+id/settings_font_medium"
-                                android:layout_width="wrap_content"
+                                android:id="@+id/settings_theme_system"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="⚙ System"
+                                android:textSize="13sp"
                                 android:checked="true"
-                                android:text="M"
-                                android:textSize="13sp" />
+                                android:button="@null"
+                                android:background="@drawable/theme_radio_bg"
+                                android:padding="10dp" />
+
+                            <View
+                                android:layout_width="8dp"
+                                android:layout_height="1dp" />
 
                             <RadioButton
-                                android:id="@+id/settings_font_large"
-                                android:layout_width="wrap_content"
+                                android:id="@+id/settings_theme_dark"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:text="L"
-                                android:textSize="13sp" />
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:text="🌙 Dark"
+                                android:textSize="13sp"
+                                android:button="@null"
+                                android:background="@drawable/theme_radio_bg"
+                                android:padding="10dp" />
 
                         </RadioGroup>
 
                     </LinearLayout>
 
-                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
-            <!-- Section: Privacy -->
-            <TextView
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- SECTION 3: SAVED DELIVERY INFO                             -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:id="@+id/settings_section_delivery"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="PRIVACY &amp; DATA"
-                android:textColor="@color/md_theme_primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:layout_marginBottom="8dp"
+                    android:text="SAVED DELIVERY INFO"
+                    android:textColor="@color/md_theme_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
 
-                    <!-- Clear search history -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:cardBackgroundColor="@color/md_theme_primaryContainer"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
                     <LinearLayout
-                        android:id="@+id/settings_clear_search"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:padding="18dp">
 
-                        <TextView
+                        <LinearLayout
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@color/md_theme_surfaceContainerLowest"
+                            android:gravity="center">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:src="@drawable/explore_nearby_24px"
+                                app:tint="@color/md_theme_primary" />
+                        </LinearLayout>
+
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
                             android:layout_weight="1"
-                            android:text="Clear Search History"
-                            android:textColor="@color/md_theme_onSurface"
-                            android:textSize="15sp" />
+                            android:orientation="vertical">
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/delete_forever_24px"
-                            app:tint="@color/md_theme_error" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Last Delivery Details"
+                                android:textColor="@color/md_theme_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/settings_delivery_preview"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Loading..."
+                                android:textColor="@color/md_theme_onSurfaceVariant"
+                                android:textSize="12sp"
+                                android:lineSpacingMultiplier="1.4" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginEnd="16dp"
-                        android:background="@color/md_theme_outlineVariant" />
+                </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Clear recently viewed -->
+            </LinearLayout>
+
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <!-- SECTION 4: ACCOUNT — Change Password                       -->
+            <!-- ══════════════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:id="@+id/settings_section_account"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="ACCOUNT"
+                    android:textColor="@color/md_theme_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.1" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    app:cardBackgroundColor="@color/md_theme_surfaceContainerLowest"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="3dp">
+
                     <LinearLayout
-                        android:id="@+id/settings_clear_recently_viewed"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="16dp">
+                        android:orientation="vertical"
+                        android:padding="18dp">
 
-                        <TextView
-                            android:layout_width="0dp"
+                        <!-- Email row (read-only display) -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Clear Recently Viewed"
-                            android:textColor="@color/md_theme_onSurface"
-                            android:textSize="15sp" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:layout_marginBottom="16dp">
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/delete_forever_24px"
-                            app:tint="@color/md_theme_error" />
+                            <LinearLayout
+                                android:layout_width="42dp"
+                                android:layout_height="42dp"
+                                android:background="@color/md_theme_primaryContainer"
+                                android:gravity="center">
+                                <ImageView
+                                    android:layout_width="22dp"
+                                    android:layout_height="22dp"
+                                    android:src="@drawable/account_circle_24px"
+                                    app:tint="@color/md_theme_primary" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Signed in as"
+                                    android:textColor="@color/md_theme_onSurfaceVariant"
+                                    android:textSize="12sp" />
+
+                                <TextView
+                                    android:id="@+id/settings_user_email"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Loading..."
+                                    android:textColor="@color/md_theme_onSurface"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginBottom="16dp"
+                            android:background="@color/md_theme_outlineVariant" />
+
+                        <!-- Current password field -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/settings_til_current_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:hint="Current Password"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            app:endIconMode="password_toggle"
+                            app:boxCornerRadiusTopStart="10dp"
+                            app:boxCornerRadiusTopEnd="10dp"
+                            app:boxCornerRadiusBottomStart="10dp"
+                            app:boxCornerRadiusBottomEnd="10dp">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/settings_et_current_password"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"
+                                android:imeOptions="actionNext" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- New password field -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/settings_til_new_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:hint="New Password"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            app:endIconMode="password_toggle"
+                            app:boxCornerRadiusTopStart="10dp"
+                            app:boxCornerRadiusTopEnd="10dp"
+                            app:boxCornerRadiusBottomStart="10dp"
+                            app:boxCornerRadiusBottomEnd="10dp">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/settings_et_new_password"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"
+                                android:imeOptions="actionNext" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Confirm new password field -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/settings_til_confirm_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:hint="Confirm New Password"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            app:endIconMode="password_toggle"
+                            app:boxCornerRadiusTopStart="10dp"
+                            app:boxCornerRadiusTopEnd="10dp"
+                            app:boxCornerRadiusBottomStart="10dp"
+                            app:boxCornerRadiusBottomEnd="10dp">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/settings_et_confirm_password"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"
+                                android:imeOptions="actionDone" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Change Password button -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/settings_btn_change_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Update Password"
+                            android:textSize="15sp"
+                            app:cornerRadius="10dp" />
 
                     </LinearLayout>
 
-                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-            </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
-            <!-- App version info -->
+            <!-- Footer -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:layout_marginTop="8dp"
-                android:text="BookLoop v1.0.0 · © ONdeveloper"
+                android:layout_marginTop="50dp"
+                android:layout_marginBottom="8dp"
+                android:text="BookLoop v1.0.0 · © ONdeveloper · JIAT 2026"
                 android:textColor="@color/md_theme_onSurfaceVariant"
                 android:textSize="12sp" />
 

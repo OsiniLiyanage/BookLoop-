@@ -1,22 +1,21 @@
 package lk.jiat.bookloop.activity;
 
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
-import android.view.WindowManager;
-import android.widget.ImageView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.bumptech.glide.Glide;
+import com.airbnb.lottie.LottieAnimationView;
+import com.google.firebase.auth.FirebaseAuth;
 
 import lk.jiat.bookloop.R;
+
+
+// HOW LOTTIE WORKS:
+//   LottieAnimationView loads a JSON animation file from res/raw/.
+//   The animation runs once, then fires addAnimatorListener to navigate.
+//   No Handler.postDelayed needed — the animation itself controls timing.
+//
 
 public class SplashActivity extends AppCompatActivity {
 
@@ -24,49 +23,41 @@ public class SplashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        EdgeToEdge.enable(this);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-            }
-
-        } else {
-            getWindow().setFlags(
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                    WindowManager.LayoutParams.FLAG_FULLSCREEN
-            );
-        }
+        // Hide action bar on splash
+        if (getSupportActionBar() != null) getSupportActionBar().hide();
 
         setContentView(R.layout.activity_splash);
 
-        ImageView imageView = findViewById(R.id.splashLogo);
+        LottieAnimationView lottie = findViewById(R.id.splash_lottie);
 
-        Glide.with(this)
-                .asBitmap()
-                .load(R.mipmap.ic_launcher)
-                .override(200)
-                .into(imageView);
+        // Play once — when animation ends, route the user
+        lottie.setRepeatCount(2);
+        lottie.playAnimation();
 
-        new Handler(Looper.getMainLooper())
-                .postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        findViewById(R.id.splashProgressBar).setVisibility(View.VISIBLE);
-                    }
-                }, 1000);
+        lottie.addAnimatorListener(new android.animation.Animator.AnimatorListener() {
+            @Override public void onAnimationStart(android.animation.Animator a) {}
+            @Override public void onAnimationCancel(android.animation.Animator a) {}
+            @Override public void onAnimationRepeat(android.animation.Animator a) {}
 
-        new Handler(Looper.getMainLooper())
-                .postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        findViewById(R.id.splashProgressBar).setVisibility(View.INVISIBLE);
-                        Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-                        startActivity(intent);
-                        finish();
-                    }
-                }, 1000);//5000
+            @Override
+            public void onAnimationEnd(android.animation.Animator a) {
+                // Check login state and navigate
+                navigateNext();
+            }
+        });
+    }
+
+    private void navigateNext() {
+        // If user is already signed in, go directly to MainActivity
+        // If not, go to SignInActivity
+        boolean loggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+
+        Intent intent = new Intent(this,
+                loggedIn ? MainActivity.class : SignInActivity.class);
+
+        startActivity(intent);
+        // Slide out: new screen slides in from right, splash slides out to left
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        finish();
     }
 }

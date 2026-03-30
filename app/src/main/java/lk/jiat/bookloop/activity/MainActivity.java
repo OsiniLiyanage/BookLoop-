@@ -56,6 +56,7 @@ import lk.jiat.bookloop.fragment.ProfileFragment;
 import lk.jiat.bookloop.fragment.SettingsFragment;
 import lk.jiat.bookloop.fragment.WishlistFragment;
 import lk.jiat.bookloop.helper.NotificationHelper;
+import lk.jiat.bookloop.helper.ThemeApplier;
 import lk.jiat.bookloop.model.User;
 import lk.jiat.bookloop.receiver.ConnectivityReceiver;
 import lk.jiat.bookloop.worker.RentalReminderWorker;
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ThemeApplier.apply(this);
         super.onCreate(savedInstanceState);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());

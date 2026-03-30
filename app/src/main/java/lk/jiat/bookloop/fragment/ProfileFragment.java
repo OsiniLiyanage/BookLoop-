@@ -139,7 +139,7 @@ public class ProfileFragment extends Fragment {
         // Wishlist count from local SQLite (fast, no network needed)
         new Thread(() -> {
             WishlistDatabase wishlistDb = new WishlistDatabase(requireContext());
-            int count = wishlistDb.getWishlistCount();
+            int count = wishlistDb.getWishlistCount(uid);
             requireActivity().runOnUiThread(() ->
                     binding.profileWishlistCount.setText(String.valueOf(count)));
         }).start();

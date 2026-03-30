@@ -1,196 +1,225 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    activity_sign_up.xml — matches new SignIn design style.
+    ALL ViewBinding IDs are identical to the original so SignUpActivity.java
+    needs ZERO changes:
+      signup_input_name, signup_input_email, signup_input_password,
+      signup_input_retype_password, signup_btn_signup, signup_btn_signin
+
+    Lottie animation: put your signup animation JSON at res/raw/signup_animation.json
+    (download any "register / create account" animation from lottiefiles.com)
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:gravity="center_horizontal"
-    android:background="@color/md_theme_background"
-    tools:context=".activity.SignUpActivity">
+    android:fillViewport="true"
+    android:background="@color/md_theme_background">
 
-    <!-- App Logo - Smaller -->
-    <ImageView
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_marginTop="16dp"
-        android:src="@drawable/logo_big"
-        android:contentDescription="@string/app_name" />
-
-    <!-- App Name & Tagline Combined -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/app_name"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:text="@string/app_tagline"
-        android:textColor="@color/md_theme_onSurfaceVariant"
-        android:textSize="11sp" />
-
-    <!-- Welcome Text - Smaller -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/signup_welcome"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="13sp"
-        android:textStyle="bold" />
-
-    <!-- Name Input with Label -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/signup_name_label"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="11sp" />
-
-    <EditText
-        android:id="@+id/signup_input_name"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="2dp"
-        android:background="@drawable/custom_input_search"
-        android:hint="@string/signup_name_hint"
-        android:inputType="textPersonName"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:textSize="13sp"
-        android:textColor="@color/md_theme_onSurface"
-        android:textColorHint="@color/md_theme_outline" />
-
-    <!-- Email Input -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="@string/signup_email_label"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="11sp" />
-
-    <EditText
-        android:id="@+id/signup_input_email"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="2dp"
-        android:background="@drawable/custom_input_search"
-        android:hint="@string/signup_email_hint"
-        android:inputType="textEmailAddress"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:textSize="13sp"
-        android:textColor="@color/md_theme_onSurface"
-        android:textColorHint="@color/md_theme_outline" />
-
-    <!-- Password Input -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="@string/signup_password_label"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="11sp" />
-
-    <EditText
-        android:id="@+id/signup_input_password"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="2dp"
-        android:background="@drawable/custom_input_search"
-        android:hint="@string/signup_password_hint"
-        android:inputType="textPassword"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:textSize="13sp"
-        android:textColor="@color/md_theme_onSurface"
-        android:textColorHint="@color/md_theme_outline" />
-
-    <!-- Confirm Password Input -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/signup_confirm_password_label"
-        android:textColor="@color/md_theme_primary"
-        android:textSize="11sp" />
-
-    <EditText
-        android:id="@+id/signup_input_retype_password"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="2dp"
-        android:background="@drawable/custom_input_search"
-        android:hint="@string/signup_confirm_password_hint"
-        android:inputType="textPassword"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:textSize="13sp"
-        android:textColor="@color/md_theme_onSurface"
-        android:textColorHint="@color/md_theme_outline" />
-
-    <!-- Password Hint - Very Small -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:layout_marginTop="2dp"
-        android:text="@string/signup_password_hint_text"
-        android:textColor="@color/md_theme_secondary"
-        android:textSize="9sp" />
-
-    <!-- Sign Up Button - Smaller margin -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/signup_btn_signup"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/signup_button"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        app:cornerRadius="8dp"
-        app:icon="@drawable/login_24px"
-        app:iconGravity="textStart"
-        app:iconPadding="6dp" />
-
-    <!-- Sign In as Text Link - No second button -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="16dp"
-        android:orientation="horizontal"
+        android:orientation="vertical"
+        android:padding="24dp"
         android:gravity="center">
 
+        <!-- ── App name ───────────────────────────────────────────── -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/signup_have_account"
-            android:textColor="@color/md_theme_onSurfaceVariant"
-            android:textSize="12sp" />
+            android:layout_marginTop="16dp"
+            android:text="BookLoop"
+            android:textColor="@color/md_theme_primary"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:fontFamily="serif"
+            android:letterSpacing="0.02" />
 
         <TextView
-            android:id="@+id/signup_btn_signin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:text="@string/signup_sign_in"
-            android:textColor="@color/md_theme_primary"
+            android:layout_marginTop="2dp"
+            android:text="@string/app_tagline"
+            android:textColor="@color/md_theme_onSurfaceVariant"
             android:textSize="12sp"
+            android:letterSpacing="0.04" />
+
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/signupAnimationView"
+            android:layout_width="260dp"
+            android:layout_height="260dp"
+            android:layout_marginTop="8dp"
+            app:lottie_rawRes="@raw/signup_animation"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_speed="1.0" />
+
+        <!-- ── Heading ────────────────────────────────────────────── -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/signup_welcome"
+            android:textColor="@color/md_theme_onBackground"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Create your free account"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="14sp" />
+
+        <!-- ── Full Name ──────────────────────────────────────────── -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            app:boxStrokeColor="@color/md_theme_primary"
+            app:hintTextColor="@color/md_theme_primary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/signup_input_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_name_label"
+                android:inputType="textPersonName"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_outline" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ── Email ──────────────────────────────────────────────── -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            app:boxStrokeColor="@color/md_theme_primary"
+            app:hintTextColor="@color/md_theme_primary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/signup_input_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_email_label"
+                android:inputType="textEmailAddress"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_outline" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ── Password ───────────────────────────────────────────── -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="@color/md_theme_primary"
+            app:hintTextColor="@color/md_theme_primary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/signup_input_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_password_label"
+                android:inputType="textPassword"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_outline" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- ── Confirm Password ───────────────────────────────────── -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            app:endIconMode="password_toggle"
+            app:boxStrokeColor="@color/md_theme_primary"
+            app:hintTextColor="@color/md_theme_primary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/signup_input_retype_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/signup_confirm_password_label"
+                android:inputType="textPassword"
+                android:textSize="16sp"
+                android:textColor="@color/md_theme_onSurface"
+                android:textColorHint="@color/md_theme_outline" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="end"
+            android:text="@string/signup_password_hint_text"
+            android:textColor="@color/md_theme_onSurfaceVariant"
+            android:textSize="11sp" />
+
+        <!-- ── Create Account button ──────────────────────────────── -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/signup_btn_signup"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:text="@string/signup_button"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground"
-            android:padding="4dp" />
+            android:textColor="@color/md_theme_onPrimary"
+            app:cornerRadius="8dp"
+            app:backgroundTint="@color/md_theme_primary" />
+
+        <!-- ── Progress bar ───────────────────────────────────────── -->
+        <ProgressBar
+            android:id="@+id/signup_progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            android:indeterminateTint="@color/md_theme_primary" />
+
+        <!-- ── Already have account link ─────────────────────────── -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="24dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/signup_have_account"
+                android:textSize="14sp"
+                android:textColor="@color/md_theme_onSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/signup_btn_signin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="@string/signup_sign_in"
+                android:textSize="14sp"
+                android:textColor="@color/md_theme_primary"
+                android:textStyle="bold"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground"
+                android:padding="4dp" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
-</LinearLayout>
+</ScrollView>

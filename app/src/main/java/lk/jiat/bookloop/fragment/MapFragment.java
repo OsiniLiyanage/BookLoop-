@@ -304,7 +304,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void getDirections(LatLng start, LatLng end) {
         executor.execute(() -> {
             // Your BookLoop API key (same one in manifest)
-            String apiKey = "AIzaSyDIK1Hd29CwsXchoRla9QlAg6qt_h3Ij3Q";
+//            String apiKey = "AIzaSyDIK1Hd29CwsXchoRla9QlAg6qt_h3Ij3Q";
+            String apiKey = "AIzaSyBo9x5eUxtjmPFf3lSVwLujcchTuTsn-7c";
 
             String origin      = start.latitude + "," + start.longitude;
             String destination = end.latitude   + "," + end.longitude;

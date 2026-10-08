@@ -1,6 +1,9 @@
 package lk.jiat.bookloop.adapter;
 
+import android.annotation.SuppressLint;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -18,26 +21,36 @@ import lk.jiat.bookloop.R;
 
 /**
  * ProductSliderAdapter
- * ─────────────────────────────────────────────────────────────────────────────
+ *
  * Displays a horizontal image slider for a product's images inside a ViewPager2.
+ * Admin uploads images -> Firebase Storage; download URLs are saved in Firestore
+ * (products/{doc}/images). This adapter loads those HTTPS URLs with Glide.
  *
- * IMAGE LOADING STRATEGY:
- *   - Admin uploads images → stored in Firebase Storage: product_images/{docId}/{file}
- *   - Download URLs saved in Firestore: products/{doc}/images: ["https://...", ...]
- *   - This adapter receives that List<String> of HTTPS URLs → loads with Glide directly
- *   - NO FirebaseStorage SDK needed here — Glide handles any https:// URL natively
+ * GESTURE: double-tap on an image calls OnImageDoubleTapListener.
+ *   ProductDetailsFragment uses this to add the book to the wishlist.
+ *   The home banner slider passes no listener, so it is unaffected.
  *
- * WHY fitCenter (not centerCrop):
- *   fitCenter shows the WHOLE book cover image without cutting any part off.
- *   centerCrop fills the frame but crops the edges — you lose part of the cover art.
+ * WHY fitCenter: shows the WHOLE cover without cropping.
  */
 public class ProductSliderAdapter extends RecyclerView.Adapter<ProductSliderAdapter.ProductSliderViewHolder> {
 
-    private final List<String> imageUrls;
+    // Callback fired when the user double-taps an image
+    public interface OnImageDoubleTapListener {
+        void onImageDoubleTap();
+    }
 
+    private final List<String> imageUrls;
+    private final OnImageDoubleTapListener doubleTapListener; // may be null
+
+    // Original constructor (used by HomeFragment banners) - no double-tap
     public ProductSliderAdapter(List<String> imageUrls) {
-        // Guard against null — empty list means getItemCount() returns 0, no crash
+        this(imageUrls, null);
+    }
+
+    // New constructor (used by ProductDetailsFragment) - with double-tap
+    public ProductSliderAdapter(List<String> imageUrls, OnImageDoubleTapListener listener) {
         this.imageUrls = (imageUrls != null) ? imageUrls : new ArrayList<>();
+        this.doubleTapListener = listener;
     }
 
     @NonNull
@@ -48,19 +61,40 @@ public class ProductSliderAdapter extends RecyclerView.Adapter<ProductSliderAdap
         return new ProductSliderViewHolder(view);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public void onBindViewHolder(@NonNull ProductSliderViewHolder holder, int position) {
         String url = imageUrls.get(position);
 
+        // GestureDetector turns raw touch events into gestures such as double-tap.
+        if (doubleTapListener != null) {
+            GestureDetector detector = new GestureDetector(holder.imageView.getContext(),
+                    new GestureDetector.SimpleOnGestureListener() {
+                        @Override
+                        public boolean onDown(MotionEvent e) {
+                            return true; // must return true so we keep receiving this touch
+                        }
+
+                        @Override
+                        public boolean onDoubleTap(MotionEvent e) {
+                            doubleTapListener.onImageDoubleTap();
+                            return true;
+                        }
+                    });
+
+            // Feed every touch to the detector. Swiping still works: when the user
+            // drags, the ViewPager2 takes over the touch and this view gets CANCEL.
+            holder.imageView.setOnTouchListener((v, event) -> {
+                detector.onTouchEvent(event);
+                return true;
+            });
+        }
+
         if (url == null || url.isEmpty()) {
-            // No URL — show plain background, skip Glide
             holder.imageView.setImageDrawable(null);
             return;
         }
 
-        // fitCenter: scales image to fit entirely within the ImageView bounds.
-        // The full book cover is visible — nothing is cropped.
-        // DiskCacheStrategy.ALL: caches both original + transformed for fast reloads.
         Glide.with(holder.imageView.getContext())
                 .load(url)
                 .fitCenter()

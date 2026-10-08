@@ -181,46 +181,56 @@ public class ProductDetailsFragment extends Fragment {
         // ── Wishlist Toggle ───────────────────────────────────────────────────
         // FIX: get userId first, then pass it to every WishlistDatabase call.
         // Old code didn't pass userId so all accounts shared one SQLite wishlist.
-        binding.productDetailsBtnWishlist.setOnClickListener(v -> {
-            if (currentProduct == null) return;
+        binding.productDetailsBtnWishlist.setOnClickListener(v -> toggleWishlist(false));
+    }
 
-            FirebaseAuth auth = FirebaseAuth.getInstance();
-            if (auth.getCurrentUser() == null) {
-                Toast.makeText(getContext(), "Please log in to save to wishlist", Toast.LENGTH_SHORT).show();
-                return;
+    // addOnly = true  -> used by DOUBLE-TAP on the book image: only ever ADDS (never removes)
+    // addOnly = false -> used by the heart button: toggles add / remove
+    private void toggleWishlist(boolean addOnly) {
+        if (currentProduct == null) return;
+
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(getContext(), "Please log in to save to wishlist", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // Get the uid BEFORE going to the background thread
+        final String userId = auth.getCurrentUser().getUid();
+
+        // Double-tap on a book that is already saved: do nothing destructive
+        if (addOnly && isInWishlist) {
+            Toast.makeText(getContext(), "Already in your wishlist", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new Thread(() -> {
+            if (isInWishlist) {
+                // pass userId so only THIS user's record is removed
+                wishlistDb.removeFromWishlist(userId, productId);
+                removeFromFirestoreWishlist(productId);
+                isInWishlist = false;
+            } else {
+                String imageUrl = (currentProduct.getImages() != null
+                        && !currentProduct.getImages().isEmpty())
+                        ? currentProduct.getImages().get(0) : "";
+
+                // pass userId so the row is tagged to THIS user
+                wishlistDb.addToWishlist(
+                        userId,
+                        productId,
+                        currentProduct.getTitle(),
+                        currentProduct.getAuthor(),
+                        currentProduct.getPrice(),
+                        imageUrl,
+                        currentProduct.getCategoryId()
+                );
+                addToFirestoreWishlist();
+                isInWishlist = true;
             }
-            // Get the uid BEFORE going to the background thread
-            final String userId = auth.getCurrentUser().getUid();
 
-            new Thread(() -> {
-                if (isInWishlist) {
-                    // FIX: pass userId so only THIS user's record is removed
-                    wishlistDb.removeFromWishlist(userId, productId);
-                    removeFromFirestoreWishlist(productId);
-                    isInWishlist = false;
-                } else {
-                    String imageUrl = (currentProduct.getImages() != null
-                            && !currentProduct.getImages().isEmpty())
-                            ? currentProduct.getImages().get(0) : "";
-
-                    // FIX: pass userId so the row is tagged to THIS user
-                    wishlistDb.addToWishlist(
-                            userId,
-                            productId,
-                            currentProduct.getTitle(),
-                            currentProduct.getAuthor(),
-                            currentProduct.getPrice(),
-                            imageUrl,
-                            currentProduct.getCategoryId()
-                    );
-                    addToFirestoreWishlist();
-                    isInWishlist = true;
-                }
-
-                if (!isAdded()) return;
-                requireActivity().runOnUiThread(this::updateWishlistButton);
-            }).start();
-        });
+            if (!isAdded()) return;
+            requireActivity().runOnUiThread(this::updateWishlistButton);
+        }).start();
     }
 
     // ── Update heart icon based on wishlist state ─────────────────────────────
@@ -231,6 +241,16 @@ public class ProductDetailsFragment extends Fragment {
             binding.productDetailsBtnWishlist.setIconTint(
                     ColorStateList.valueOf(getResources().getColor(R.color.md_theme_primary, null)));
             Toast.makeText(getContext(), "Saved to Wishlist!", Toast.LENGTH_SHORT).show();
+
+            // Little "pop" on the heart button (visible feedback for double-tap)
+            binding.productDetailsBtnWishlist.animate()
+                    .scaleX(1.4f).scaleY(1.4f).setDuration(150)
+                    .withEndAction(() -> {
+                        if (binding != null) {
+                            binding.productDetailsBtnWishlist.animate()
+                                    .scaleX(1f).scaleY(1f).setDuration(150).start();
+                        }
+                    }).start();
         } else {
             binding.productDetailsBtnWishlist.setIconResource(R.drawable.favorite_border_24px);
             binding.productDetailsBtnWishlist.setIconTint(
@@ -297,7 +317,7 @@ public class ProductDetailsFragment extends Fragment {
                             availableCopies   = product.getStockCount();
 
                             ProductSliderAdapter sliderAdapter =
-                                    new ProductSliderAdapter(product.getImages());
+                                    new ProductSliderAdapter(product.getImages(), () -> toggleWishlist(true));
                             binding.productImageSlider.setAdapter(sliderAdapter);
                             binding.dotsIndicator.attachTo(binding.productImageSlider);
 

@@ -1,10 +1,13 @@
 package lk.jiat.bookloop.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -18,12 +21,15 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
@@ -56,6 +62,7 @@ import lk.jiat.bookloop.fragment.ProfileFragment;
 import lk.jiat.bookloop.fragment.SettingsFragment;
 import lk.jiat.bookloop.fragment.WishlistFragment;
 import lk.jiat.bookloop.helper.NotificationHelper;
+import lk.jiat.bookloop.helper.OrderStatusWatcher;
 import lk.jiat.bookloop.helper.ThemeApplier;
 import lk.jiat.bookloop.model.User;
 import lk.jiat.bookloop.receiver.ConnectivityReceiver;
@@ -74,6 +81,14 @@ import lk.jiat.bookloop.worker.RentalReminderWorker;
  *   - On AllBooksFragment: live search filters the all-books grid
  *   - On any OTHER fragment: pressing Enter/search launches AllBooksFragment
  *     with the query pre-filled so the user always gets results
+ *
+ * NOTIFICATION PERMISSION (Android 13+):
+ *   requestNotificationPermissionIfNeeded() shows the system "Allow notifications?"
+ *   popup. Without Allow, no notification can appear on Android 13 phones.
+ *
+ * REMINDER DEMO:
+ *   DEMO_REMINDER = true schedules a one-time worker 10 seconds after the app opens.
+ *   Set it to false after the viva - the real 12-hour periodic work is unaffected.
  */
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -89,6 +104,22 @@ public class MainActivity extends AppCompatActivity
     private FirebaseFirestore firebaseFirestore;
 
     private ConnectivityReceiver connectivityReceiver;
+
+    // Listens for admin order-status changes and shows a notification
+    private OrderStatusWatcher orderStatusWatcher;
+
+    // DEMO SWITCH: true = a return reminder is triggered 10 seconds after the app opens.
+    // Set to false when you are not demonstrating.
+    private static final boolean DEMO_REMINDER = true;
+
+    // Asks the user for POST_NOTIFICATIONS and tells us the answer
+    private final ActivityResultLauncher<String> notificationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                Log.i("NotifPermission", "User answered notification popup. Granted = " + granted);
+                Toast.makeText(this,
+                        granted ? "Notifications allowed" : "Notifications blocked — enable them in phone Settings",
+                        Toast.LENGTH_SHORT).show();
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,10 +158,23 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
         bottomNavigationView.setOnItemSelectedListener(this);
 
+        // A tapped notification passes "openFragment" (orders / cart / home)
+        String openFragment = getIntent() != null
+                ? getIntent().getStringExtra("openFragment") : null;
+        boolean signedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+
         if (savedInstanceState == null) {
-            loadFragment(new HomeFragment());
-            navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
-            bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
+            if (signedIn && "orders".equals(openFragment)) {
+                loadFragment(new OrdersFragment());
+                bottomNavigationView.getMenu().findItem(R.id.bottom_nav_orders).setChecked(true);
+            } else if (signedIn && "cart".equals(openFragment)) {
+                loadFragment(new CartFragment());
+                bottomNavigationView.getMenu().findItem(R.id.bottom_nav_cart).setChecked(true);
+            } else {
+                loadFragment(new HomeFragment());
+                navigationView.getMenu().findItem(R.id.nav_home).setChecked(true);
+                bottomNavigationView.getMenu().findItem(R.id.bottom_nav_home).setChecked(true);
+            }
         }
 
         // ── Search bar wiring ─────────────────────────────────────────────────
@@ -221,6 +265,13 @@ public class MainActivity extends AppCompatActivity
 
         NotificationHelper.createNotificationChannels(this);
 
+        // Start the live order-status watcher (only does anything when signed in)
+        orderStatusWatcher = new OrderStatusWatcher(this);
+        orderStatusWatcher.start();
+
+        // Android 13+: ask the user to allow notifications
+        requestNotificationPermissionIfNeeded();
+
         PeriodicWorkRequest reminderWork = new PeriodicWorkRequest.Builder(
                 RentalReminderWorker.class, 12, TimeUnit.HOURS).build();
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
@@ -228,11 +279,41 @@ public class MainActivity extends AppCompatActivity
                 ExistingPeriodicWorkPolicy.KEEP,
                 reminderWork);
 
+        // THREAD PROOF: onCreate runs on the main (UI) thread.
+        Log.d("ThreadDemo", "MainActivity.onCreate running on thread: "
+                + Thread.currentThread().getName());
+
+        // DEMO: one-time background job 10 seconds from now, with the demo flag ON
+        // (skips the due-date check). The real 12-hour periodic work above is untouched.
+        if (DEMO_REMINDER) {
+            OneTimeWorkRequest demoWork = new OneTimeWorkRequest.Builder(RentalReminderWorker.class)
+                    .setInitialDelay(10, TimeUnit.SECONDS)
+                    .setInputData(new Data.Builder()
+                            .putBoolean(RentalReminderWorker.KEY_DEMO, true)
+                            .build())
+                    .build();
+            WorkManager.getInstance(this).enqueue(demoWork);
+            Log.d("ThreadDemo", "Demo reminder scheduled for 10 seconds from now");
+        }
+
         connectivityReceiver = new ConnectivityReceiver();
         ConnectivityReceiver.setConnectivityListener(isConnected ->
                 Log.i("Connectivity", "Network connected: " + isConnected));
         IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(connectivityReceiver, filter);
+    }
+
+    // Shows the "Allow BookLoop to send you notifications?" popup (Android 13+ only).
+    // If already allowed, or phone is older than Android 13, nothing happens.
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            boolean alreadyAllowed = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+            Log.i("NotifPermission", "Permission already granted = " + alreadyAllowed);
+            if (!alreadyAllowed) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
     }
 
     // Navigate to AllBooksFragment and pass the search query so it pre-filters on load
@@ -359,6 +440,7 @@ public class MainActivity extends AppCompatActivity
             startActivity(new Intent(this, SignInActivity.class));
 
         } else if (itemId == R.id.nav_logout) {
+            if (orderStatusWatcher != null) orderStatusWatcher.stop(); // stop BEFORE signing out
             firebaseAuth.signOut();
             loadFragment(new HomeFragment());
             navigationView.getMenu().clear();
@@ -384,6 +466,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (orderStatusWatcher != null) {
+            orderStatusWatcher.stop();
+        }
         if (connectivityReceiver != null) {
             unregisterReceiver(connectivityReceiver);
         }

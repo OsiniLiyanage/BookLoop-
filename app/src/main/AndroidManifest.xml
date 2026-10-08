@@ -27,7 +27,7 @@
         android:theme="@style/Theme.BookLoop">
 
         <!--
-             TODO: Before you run your application, you need a Google Maps API key.
+
 
              To get one, follow the directions here:
 
@@ -39,7 +39,7 @@
         -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDIK1Hd29CwsXchoRla9QlAg6qt_h3Ij3Q" />
+            android:value="AIzaSyBo9x5eUxtjmPFf3lSVwLujcchTuTsn-7c" />
 
 
         <!-- Activities -->

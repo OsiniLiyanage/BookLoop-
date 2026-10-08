@@ -1,24 +1,23 @@
 package lk.jiat.bookloop.helper;
 
+import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import lk.jiat.bookloop.R;
 import lk.jiat.bookloop.activity.MainActivity;
 
 // NotificationHelper — shows local notifications for BookLoop events.
-// Covers the "Notifications" assignment requirement.
 // Three channels: orders (rental confirmations), reminders (return due), new_books (new listings)
-//
-// IMPORTANT: This file MUST be named NotificationHelper.java (capital H)
-// because Java requires the filename to exactly match the public class name.
 public class NotificationHelper {
 
     // Notification channel IDs — used to group notifications by type
@@ -31,6 +30,30 @@ public class NotificationHelper {
     private static final int NOTIF_RETURN_REMINDER = 1002;
     private static final int NOTIF_NEW_BOOK        = 1003;
     private static final int NOTIF_CART_REMINDER   = 1004;
+
+    // Returns true only if BOTH are OK:
+    //   1) the user left the "Notifications" switch ON in Settings (SharedPreferences)
+    //   2) on Android 13+ the user tapped Allow on the system permission popup
+    public static boolean canNotify(Context context) {
+        BookLoopPreferences prefs = new BookLoopPreferences(context);
+        if (!prefs.isNotificationsEnabled()) {
+            return false;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(context,
+                    Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+        }
+        return true;
+    }
+
+    // Builds a notification ID that is UNIQUE for one book in one order.
+    // Same order + same book -> same ID (so it updates instead of duplicating).
+    // Different order or book -> different ID (so several reminders can show together).
+    // Starts at 2000 so it never clashes with the fixed IDs 1001-1004 above.
+    public static int reminderIdFor(String orderId, String productId) {
+        String key = orderId + "_" + productId;
+        return 2000 + Math.abs(key.hashCode() % 100000);
+    }
 
     // Call this once from MainActivity.onCreate() to register all channels.
     // Android 8+ requires channels before you can show any notification.
@@ -57,6 +80,8 @@ public class NotificationHelper {
 
     // Show order confirmation after user places a rental order
     public static void showOrderConfirmation(Context context, String orderId, double total) {
+        if (!canNotify(context)) return;
+
         Intent intent = new Intent(context, MainActivity.class);
         intent.putExtra("openFragment", "orders");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -79,17 +104,76 @@ public class NotificationHelper {
         try {
             NotificationManagerCompat.from(context).notify(NOTIF_ORDER_CONFIRM, builder.build());
         } catch (SecurityException e) {
-            // Permission not granted yet — silently skip, no crash
+            // Permission not granted — silently skip, no crash
         }
     }
 
-    // Show return reminder (called by background worker when book is due soon)
-    public static void showReturnReminder(Context context, String bookTitle, String dueDate) {
+    // Show a notification when the admin changes an order's status.
+    // Each order has its own ID (3000+), so updates for different orders do not overwrite
+    // each other, and a newer status for the SAME order replaces its older notification.
+    public static void showOrderStatusUpdate(Context context, String docId,
+                                             String orderId, String newStatus) {
+        if (!canNotify(context)) return;
+
+        // Same short label the Orders screen uses: "Order #" + last 8 characters
+        String shortId = (orderId != null && orderId.length() > 8)
+                ? orderId.substring(orderId.length() - 8)
+                : (orderId != null ? orderId : "");
+
+        String message;
+        switch (newStatus) {
+            case "CONFIRMED":  message = "has been confirmed."; break;
+            case "PROCESSING": message = "is being prepared for delivery."; break;
+            case "DELIVERED":  message = "has been delivered. Enjoy your book!"; break;
+            case "RETURNED":   message = "is marked as returned. Thank you!"; break;
+            default:           message = "status is now " + newStatus + "."; break;
+        }
+
+        int notificationId = 3000 + Math.abs(String.valueOf(docId).hashCode() % 100000);
+
         Intent intent = new Intent(context, MainActivity.class);
         intent.putExtra("openFragment", "orders");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 1, intent,
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, notificationId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ORDERS)
+                .setSmallIcon(R.drawable.library_books_24px)
+                .setContentTitle("Order update")
+                .setContentText("Order #" + shortId + " " + message)
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText("Order #" + shortId + " " + message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build());
+        } catch (SecurityException e) {
+            // Permission not granted — silently skip
+        }
+    }
+
+    // Show return reminder — OLD signature kept so nothing else breaks.
+    // Uses the single fixed ID (a second reminder would overwrite the first).
+    public static void showReturnReminder(Context context, String bookTitle, String dueDate) {
+        showReturnReminder(context, bookTitle, dueDate, NOTIF_RETURN_REMINDER);
+    }
+
+    // Show return reminder with its OWN notification ID.
+    // The background worker uses this one: every order/book gets a different ID,
+    // so several reminders appear side by side instead of replacing each other.
+    public static void showReturnReminder(Context context, String bookTitle, String dueDate,
+                                          int notificationId) {
+        if (!canNotify(context)) return;
+
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.putExtra("openFragment", "orders");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        // requestCode = notificationId, so each notification keeps its own PendingIntent
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, notificationId, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_REMINDERS)
@@ -101,7 +185,7 @@ public class NotificationHelper {
                 .setAutoCancel(true);
 
         try {
-            NotificationManagerCompat.from(context).notify(NOTIF_RETURN_REMINDER, builder.build());
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build());
         } catch (SecurityException e) {
             // Permission not granted — silently skip
         }
@@ -109,6 +193,8 @@ public class NotificationHelper {
 
     // Show new book available notification
     public static void showNewBookAlert(Context context, String bookTitle, String category) {
+        if (!canNotify(context)) return;
+
         Intent intent = new Intent(context, MainActivity.class);
         intent.putExtra("openFragment", "home");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -133,6 +219,8 @@ public class NotificationHelper {
 
     // Cart reminder — call this when user has items in cart but hasn't checked out
     public static void showCartReminder(Context context, int itemCount) {
+        if (!canNotify(context)) return;
+
         Intent intent = new Intent(context, MainActivity.class);
         intent.putExtra("openFragment", "cart");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

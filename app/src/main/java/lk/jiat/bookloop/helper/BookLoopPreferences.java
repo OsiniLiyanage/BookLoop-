@@ -7,7 +7,7 @@ import android.content.SharedPreferences;
 //
 // All keys are declared as constants here so they're never mistyped.
 // New keys added in this version:
-//   ✅ app_theme  ("light" / "dark" / "system")  — for the theme toggle in Settings
+//    app_theme  ("light" / "dark" / "system")  — for the theme toggle in Settings
 public class BookLoopPreferences {
 
     private static final String PREF_FILE = "bookloop_prefs";

@@ -1,6 +1,7 @@
 package lk.jiat.bookloop.fragment;
 
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +40,9 @@ public class OrdersFragment extends Fragment {
     private static final String TAG = "OrdersFragment";
     private FragmentOrdersBinding binding;
 
+    // Live listener handle - kept so we can STOP listening in onDestroyView()
+    private ListenerRegistration ordersListener;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -58,6 +63,10 @@ public class OrdersFragment extends Fragment {
         loadOrders();
     }
 
+    // LIVE ORDERS: addSnapshotListener() keeps a real-time connection to Firestore.
+    // Whenever an order changes (e.g. admin sets PROCESSING -> DELIVERED), Firestore
+    // calls the listener again and the list refreshes by itself - no manual refresh.
+    // The old .get() read the data only ONCE.
     private void loadOrders() {
         FirebaseAuth auth = FirebaseAuth.getInstance();
         if (auth.getCurrentUser() == null) {
@@ -67,14 +76,33 @@ public class OrdersFragment extends Fragment {
 
         String uid = auth.getCurrentUser().getUid();
 
-        // FIX: removed .orderBy("orderDate") — that caused the 400 Bad Request error
-        // because Firestore requires a composite index for whereEqualTo + orderBy together.
-        // We sort the result ourselves in Java below — same outcome, no index needed.
-        FirebaseFirestore.getInstance()
+        // Stop any previous listener so we never have two running at once
+        if (ordersListener != null) {
+            ordersListener.remove();
+            ordersListener = null;
+        }
+
+        // No .orderBy() here (needs a composite index) - we sort in Java below.
+        ordersListener = FirebaseFirestore.getInstance()
                 .collection("orders")
                 .whereEqualTo("userId", uid)
-                .get()
-                .addOnSuccessListener(qds -> {
+                .addSnapshotListener((qds, error) -> {
+                    // View may already be destroyed when a late update arrives
+                    if (binding == null) return;
+
+                    if (error != null) {
+                        Log.e(TAG, "Live orders listener failed: " + error.getMessage());
+                        binding.ordersLoading.setVisibility(View.GONE);
+                        // Keep showing whatever list we already have; only show the
+                        // empty screen if there is nothing on screen yet.
+                        if (binding.ordersRecycler.getAdapter() == null) showEmpty();
+                        return;
+                    }
+                    if (qds == null) return;
+
+                    Log.d(TAG, "Live update: " + qds.size() + " orders (fromCache="
+                            + qds.getMetadata().isFromCache() + ")");
+
                     binding.ordersLoading.setVisibility(View.GONE);
 
                     if (qds.isEmpty()) {
@@ -84,7 +112,7 @@ public class OrdersFragment extends Fragment {
 
                     List<Order> orders = qds.toObjects(Order.class);
 
-                    // Sort newest-first in Java — replaces the missing .orderBy()
+                    // Sort newest-first in Java - replaces the missing .orderBy()
                     // Orders with null orderDate go to the end
                     orders.sort((a, b) -> {
                         if (a.getOrderDate() == null && b.getOrderDate() == null) return 0;
@@ -93,24 +121,37 @@ public class OrdersFragment extends Fragment {
                         return b.getOrderDate().compareTo(a.getOrderDate()); // newest first
                     });
 
+                    binding.ordersEmptyState.setVisibility(View.GONE);
                     binding.ordersRecycler.setVisibility(View.VISIBLE);
-                    binding.ordersRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
+
+                    // Create the layout manager once, and remember the scroll position
+                    // so the list does not jump to the top on every live update.
+                    if (binding.ordersRecycler.getLayoutManager() == null) {
+                        binding.ordersRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
+                    }
+                    Parcelable scrollState =
+                            binding.ordersRecycler.getLayoutManager().onSaveInstanceState();
+
                     binding.ordersRecycler.setAdapter(new OrdersAdapter(orders));
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to load orders: " + e.getMessage());
-                    showEmpty();
+
+                    binding.ordersRecycler.getLayoutManager().onRestoreInstanceState(scrollState);
                 });
     }
 
     private void showEmpty() {
         binding.ordersLoading.setVisibility(View.GONE);
+        binding.ordersRecycler.setVisibility(View.GONE);
         binding.ordersEmptyState.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        // STOP the live listener - otherwise it keeps running after the screen is gone
+        if (ordersListener != null) {
+            ordersListener.remove();
+            ordersListener = null;
+        }
         binding = null;
     }
 }

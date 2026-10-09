@@ -15,16 +15,20 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 
+import java.io.File;
 import java.util.UUID;
 
 import lk.jiat.bookloop.R;
+import lk.jiat.bookloop.activity.MainActivity;
 import lk.jiat.bookloop.activity.SignInActivity;
 import lk.jiat.bookloop.databinding.FragmentProfileBinding;
 import lk.jiat.bookloop.helper.WishlistDatabase;
@@ -37,6 +41,8 @@ public class ProfileFragment extends Fragment {
     private static final String TAG = "ProfileFragment";
     // NEW — BookLoop admin support phone number
     private static final String SUPPORT_PHONE = "+94112345678";
+    // Name of the camera photo file kept in internal storage (filesDir)
+    private static final String CAMERA_PHOTO_NAME = "profile_camera.jpg";
 
     private FragmentProfileBinding binding;
     private FirebaseAuth firebaseAuth;
@@ -153,8 +159,12 @@ public class ProfileFragment extends Fragment {
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         // NEW — Camera capture (Multimedia: camera)
-                        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        cameraLauncher.launch(cameraIntent);
+                        // The camera saves the full photo straight into the app's
+                        // internal storage (filesDir) through a FileProvider.
+                        File photoFile = new File(requireContext().getFilesDir(), CAMERA_PHOTO_NAME);
+                        Uri photoUri = FileProvider.getUriForFile(requireContext(),
+                                requireContext().getPackageName() + ".fileprovider", photoFile);
+                        cameraLauncher.launch(photoUri);
                     } else {
                         // Gallery picker
                         Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -166,17 +176,28 @@ public class ProfileFragment extends Fragment {
     }
 
     // NEW — Handle camera result (Multimedia requirement)
-    private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    android.os.Bundle extras = result.getData().getExtras();
-                    if (extras != null) {
-                        android.graphics.Bitmap bitmap = (android.graphics.Bitmap) extras.get("data");
-                        binding.profileImage.setImageBitmap(bitmap);
+    // TakePicture writes the full-size photo into the file we gave it. When it succeeds
+    // we show it at once (profile + side drawer) and then upload it.
+    private final ActivityResultLauncher<Uri> cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.TakePicture(), success -> {
+                if (success && binding != null) {
+                    File photoFile = new File(requireContext().getFilesDir(), CAMERA_PHOTO_NAME);
+                    if (!photoFile.exists()) return;
 
-                        // Save bitmap to internal storage, then upload to Firebase Storage
-                        saveBitmapToStorage(bitmap);
+                    // 1) Show the new photo immediately on the profile screen
+                    Glide.with(this)
+                            .load(photoFile)
+                            .signature(new ObjectKey(System.currentTimeMillis()))
+                            .circleCrop()
+                            .into(binding.profileImage);
+
+                    // 2) Update the side-drawer photo immediately too
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).updateHeaderProfilePhoto(photoFile);
                     }
+
+                    // 3) Upload to Firebase Storage and save the id in Firestore
+                    uploadImageToFirebase(Uri.fromFile(photoFile));
                 }
             });
 
@@ -186,29 +207,13 @@ public class ProfileFragment extends Fragment {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
                     Glide.with(this).load(uri).circleCrop().into(binding.profileImage);
+                    // Update the side-drawer photo immediately too
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).updateHeaderProfilePhoto(uri);
+                    }
                     uploadImageToFirebase(uri);
                 }
             });
-
-    // NEW — Save camera bitmap to internal app storage, then upload (Internal Storage requirement)
-    private void saveBitmapToStorage(android.graphics.Bitmap bitmap) {
-        new Thread(() -> {
-            try {
-                // Save to internal storage first
-                java.io.File dir = requireContext().getFilesDir();
-                java.io.File file = new java.io.File(dir, "profile_temp.jpg");
-                java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, fos);
-                fos.close();
-
-                // Upload from the saved file
-                Uri fileUri = Uri.fromFile(file);
-                requireActivity().runOnUiThread(() -> uploadImageToFirebase(fileUri));
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to save bitmap: " + e.getMessage());
-            }
-        }).start();
-    }
 
     // Upload selected image to Firebase Storage and save path to Firestore
     private void uploadImageToFirebase(Uri uri) {

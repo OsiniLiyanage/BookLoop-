@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- App internal storage (filesDir): camera profile photo is saved here -->
+    <files-path name="profile_photos" path="." />
+</paths>

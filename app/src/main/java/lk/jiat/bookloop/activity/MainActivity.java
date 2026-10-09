@@ -338,6 +338,25 @@ public class MainActivity extends AppCompatActivity
                 .commit();
     }
 
+    // Called by ProfileFragment so the side-drawer photo updates instantly
+    // when the user takes a new camera photo or picks one from the gallery.
+    public void updateHeaderProfilePhoto(java.io.File file) {
+        if (sideNavHeaderBinding == null) return;
+        Glide.with(this)
+                .load(file)
+                .signature(new com.bumptech.glide.signature.ObjectKey(System.currentTimeMillis()))
+                .circleCrop()
+                .into(sideNavHeaderBinding.headerProfilePic);
+    }
+
+    public void updateHeaderProfilePhoto(Uri uri) {
+        if (sideNavHeaderBinding == null) return;
+        Glide.with(this)
+                .load(uri)
+                .circleCrop()
+                .into(sideNavHeaderBinding.headerProfilePic);
+    }
+
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {

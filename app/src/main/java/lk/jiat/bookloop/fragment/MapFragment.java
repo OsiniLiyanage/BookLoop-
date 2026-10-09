@@ -34,6 +34,9 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.Tile;
+import com.google.android.gms.maps.model.TileOverlayOptions;
+import com.google.android.gms.maps.model.TileProvider;
 import com.google.maps.DirectionsApi;
 import com.google.maps.GeoApiContext;
 import com.google.maps.android.PolyUtil;
@@ -41,7 +44,11 @@ import com.google.maps.errors.ApiException;
 import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.TravelMode;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -162,11 +169,43 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    // ─── Base map tiles from OpenStreetMap (free, no API key needed) ─────────
+    // Google's own road tiles need a billing-enabled key. This draws OpenStreetMap
+    // tiles instead; markers, GPS, long-press and Directions all keep working.
+    private void useOpenStreetMapTiles() {
+        mMap.setMapType(GoogleMap.MAP_TYPE_NONE);
+        TileProvider provider = new TileProvider() {
+            @Override
+            public Tile getTile(int x, int y, int zoom) {
+                try {
+                    URL url = new URL("https://tile.openstreetmap.org/" + zoom + "/" + x + "/" + y + ".png");
+                    HttpURLConnection c = (HttpURLConnection) url.openConnection();
+                    c.setRequestProperty("User-Agent", "BookLoopStudentApp/1.0 (lk.jiat.bookloop)");
+                    c.setConnectTimeout(8000);
+                    c.setReadTimeout(8000);
+                    try (InputStream in = c.getInputStream();
+                         ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                        byte[] buf = new byte[4096];
+                        int n;
+                        while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                        return new Tile(256, 256, out.toByteArray());
+                    } finally {
+                        c.disconnect();
+                    }
+                } catch (Exception e) {
+                    return TileProvider.NO_TILE;
+                }
+            }
+        };
+        mMap.addTileOverlay(new TileOverlayOptions().tileProvider(provider));
+    }
+
     // ─── Called by Maps SDK when the Google Map is ready to use ──────────────
     // Everything map-related (markers, camera, listeners) goes here.
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+        useOpenStreetMapTiles();
 
         // Enable zoom buttons and compass
         mMap.getUiSettings().setZoomControlsEnabled(true);
